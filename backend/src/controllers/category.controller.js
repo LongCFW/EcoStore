@@ -4,7 +4,7 @@ export const getAllCategories = async (req, res, next) => {
     try {
         const categories = await getAllCategoriesService();
 
-        res.json({
+        res.status(200).json({
             success: true,
             data: categories,
             message: "Get categories successfully",
@@ -29,12 +29,12 @@ export const createCategory = async (req, res, next) => {
             message: "Category created successfully",
         });
     } catch (error) {
-        // --- ĐÂY LÀ CHỖ FIX LỖI STATUS CODE ---
-        // Nếu lỗi là do trùng lặp (Service ném ra), ta gán code 400
-        if (error.message === "Category name already exists") {
-            error.statusCode = 400; 
+        // Xử lý lỗi trùng lặp từ Service hoặc Mongoose (Code 11000)
+        if (error.message === "Category name already exists" || error.code === 11000) {
+            error.statusCode = 400; // Bad Request
+            error.message = "Category name already exists"; // Đảm bảo thông báo lỗi dễ hiểu
         }
         
-        next(error); // Chuyền cho "Bác sĩ" xử lý tiếp
+        next(error); // Chuyền lỗi cho Error Middleware xử lý
     }
 };

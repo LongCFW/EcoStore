@@ -1,26 +1,24 @@
-// src/models/category.js
 import mongoose from "mongoose";
-import slugify from "slugify"; // <--- Import thư viện vừa cài
+import slugify from "slugify";
 
 const { Schema } = mongoose;
 
 const CategorySchema = new Schema({
-    name: { type: String, required: true, unique: true }, // Tên là bắt buộc và không trùng
-    slug: { type: String, unique: true },                 // Slug để làm đẹp URL
+    name: { type: String, required: true, unique: true },
+    slug: { type: String, unique: true },
     description: String,
-    // Dành cho danh mục con (Ví dụ: Điện tử -> Điện thoại)
-    parentId: { type: Schema.Types.ObjectId, ref: "Category", default: null }, 
+    parentId: { type: Schema.Types.ObjectId, ref: "Category", default: null },
     imageUrl: String,
-    isActive: { type: Boolean, default: true }            // Để ẩn hiện danh mục
-}, { timestamps: true }); // Tự động tạo createdAt, updatedAt
+    isActive: { type: Boolean, default: true }
+}, { timestamps: true });
 
-// --- MIDDLEWARE CỦA MONGOOSE (HOOK) ---
-// Trước khi lưu (save), tự động tạo slug từ name
-CategorySchema.pre("save", function(next) {
+CategorySchema.pre("save", async function () {
+    // Nếu tên (name) có thay đổi, cập nhật lại slug
     if (this.isModified("name")) {
+        // Tạo slug từ tên (ví dụ: "Rau Củ" -> "rau-cu")
         this.slug = slugify(this.name, { lower: true, strict: true });
     }
-    next();
+    // Trong async function của Mongoose, không cần gọi next()
 });
 
 export default mongoose.model("Category", CategorySchema);
