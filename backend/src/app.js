@@ -39,4 +39,4 @@ const PORT = process.env.PORT || 5000;  // Lấy PORT từ .env hoặc dùng 500
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);  // Log thông báo server đã chạy
 });
-
+//
