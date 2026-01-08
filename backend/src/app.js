@@ -1,53 +1,44 @@
-// IMPORT LIBRARIES
-import express from "express";           // Web framework chính
-import cors from "cors";                  // Middleware xử lý Cross-Origin Resource Sharing
-import dotenv from "dotenv";              // Load biến môi trường từ file .env
-import apiRoutes from "./routes/index.js"; // Routes chính của API
-import { errorHandler } from "./middlewares/error.middleware.js"; // Thêm lỗi tự tạo
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import apiRoutes from "./routes/index.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
 
-// IMPORT CONFIG
-import connectDB from "./config/db.js";   // Hàm kết nối database
+// 1. CONFIGURATION
+dotenv.config();
+const app = express();
 
-// LOAD ENVIRONMENT VARIABLES
-dotenv.config();  // Đọc file .env và gán các biến vào process.env
+// 2. CONNECT DATABASE
+connectDB();
 
-// CREATE EXPRESS APP
-const app = express();  // Khởi tạo ứng dụng Express
-
-// DATABASE CONNECTION
-connectDB();  // Kết nối tới MongoDB
-
-// MIDDLEWARE CONFIGURATION
-// CORS: Cho phép request từ các domain khác
+// 3. GLOBAL MIDDLEWARES (Bộ lọc chung)
+// Phải đặt trước Routes để xử lý dữ liệu đầu vào
 app.use(cors());
+app.use(express.json()); // quan trọng: giúp server hiểu JSON từ client
 
-// Middleware xử lý lỗi 404 (Không tìm thấy route)
-app.use((req, res, next) => {
-    const error = new Error("Not Found");
-    error.statusCode = 404;
-    next(error); // Chuyền lỗi xuống errorHandler
-});
-
-// JSON Parser: Chuyển đổi request body thành JSON
-app.use(express.json());
-
-// Middleware xử lý lỗi tập trung (Error Handler) - PHẢI ĐẶT CUỐI CÙNG
-app.use(errorHandler);
-
-// TEST ROUTE
-// Route kiểm tra server có đang chạy không
+// 4. ROUTING (Đường đi)
+// Test Route
 app.get("/", (req, res) => {
-    res.json({ message: "EcoStore backend is running" });
+  res.json({ message: "EcoStore backend is running" });
 });
 
-// MOUNT API ROUTES
-// Tất cả routes API sẽ được mount tại /api
-// Ví dụ: /api/auth, /api/products, /api/categories, v.v...
+// API Routes
 app.use("/api", apiRoutes);
 
-// START SERVER
-const PORT = process.env.PORT || 5000;  // Lấy PORT từ .env hoặc dùng 5000 mặc định
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);  // Log thông báo server đã chạy
+// 5. ERROR HANDLING (Xử lý lỗi - Luôn nằm cuối)
+// Middleware bắt lỗi 404 (Không tìm thấy route)
+app.use((req, res, next) => {
+  const error = new Error("Not Found");
+  error.statusCode = 404;
+  next(error);
 });
-//
+
+// Middleware xử lý lỗi tập trung
+app.use(errorHandler);
+
+// 6. START SERVER
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
