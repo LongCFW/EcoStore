@@ -36,3 +36,36 @@ export const loginService = async (email, password) => {
     };
 };
 
+export const registerService = async (email, password, name) => {
+    // 1. Kiểm tra xem email đã tồn tại chưa
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        throw new Error("Email already exists");
+    }
+
+    // 2. Mã hóa mật khẩu (Hashing)
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // 3. Lấy role mặc định là "customer" để gán cho người dùng mới
+    const customerRole = await Role.findOne({ name: "customer" });
+    if (!customerRole) {
+        throw new Error("Role 'customer' not found in database");
+    }
+
+    // 4. Tạo user mới và lưu vào DB
+    const newUser = await User.create({
+        email,
+        password_hash: hashedPassword,
+        name,
+        role: customerRole._id,
+        email_Verified: false // Mới tạo thì chưa verify email
+    });
+
+    return {
+        id: newUser._id,
+        email: newUser.email,
+        name: newUser.name,
+        role: "customer"
+    };
+};
