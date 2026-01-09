@@ -1,0 +1,588 @@
+/* 1. Thiết lập bảng màu Eco */
+:root {
+    --eco-primary: #2E7D32;
+    /* Xanh lá đậm chủ đạo */
+    --eco-secondary: #81C784;
+    /* Xanh lá nhạt */
+    --eco-accent: #FFCA28;
+    /* Vàng nhấn (cho sao đánh giá, nút hot) */
+    --eco-bg: #F1F8E9;
+    /* Màu nền kem nhẹ nhàng */
+    --eco-dark: #1B5E20;
+    /* Màu chữ đậm */
+    --eco-text: #37474F;
+    /* Màu chữ thường */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--eco-text);
+    background-color: #fcfdfc;
+}
+
+/* 2. Ghi đè màu Bootstrap mặc định */
+.text-primary {
+    color: var(--eco-primary) !important;
+}
+
+.bg-primary {
+    background-color: var(--eco-primary) !important;
+}
+
+.btn-primary {
+    background-color: var(--eco-primary);
+    border-color: var(--eco-primary);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--eco-dark);
+    border-color: var(--eco-dark);
+    transform: translateY(-2px);
+    /* Hiệu ứng nổi lên khi di chuột */
+}
+
+.btn-outline-primary {
+    color: var(--eco-primary);
+    border-color: var(--eco-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--eco-primary);
+    color: white;
+}
+
+/* 3. Hiệu ứng Card Sản phẩm (Product Card) */
+.product-card {
+    border: none;
+    border-radius: 12px;
+    background: white;
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+.product-card:hover {
+    transform: translateY(-8px);
+    /* Bay lên nhẹ */
+    box-shadow: 0 15px 30px rgba(46, 125, 50, 0.15) !important;
+    /* Đổ bóng xanh nhẹ */
+}
+
+/* Wrapper ảnh để xử lý overlay */
+.product-img-wrapper {
+    overflow: hidden;
+    position: relative;
+    background-color: #f8f9fa;
+}
+
+.product-img-wrapper img {
+    transition: transform 0.5s ease;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.product-card:hover .product-img-wrapper img {
+    transform: scale(1.08);
+    /* Phóng to ảnh nhẹ khi hover */
+}
+
+/* Action Overlay - Thanh công cụ giữa ảnh */
+.product-action-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.product-card:hover .product-action-overlay {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: var(--eco-text);
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background: var(--eco-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Các tùy chỉnh khác */
+.color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #ddd;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.color-dot:hover,
+.color-dot.active {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 2px var(--eco-primary);
+}
+
+.navbar-eco {
+    background-color: white;
+    border-bottom: 2px solid var(--eco-bg);
+}
+
+.nav-link {
+    font-weight: 500;
+    color: var(--eco-text) !important;
+    transition: color 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--eco-primary) !important;
+}
+
+.feature-box {
+    transition: transform 0.3s;
+    border: 1px solid #e0e0e0;
+}
+
+.feature-box:hover {
+    transform: translateY(-5px);
+    border-color: var(--eco-secondary);
+    background-color: var(--eco-bg);
+}
+
+.scroll-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background-color: var(--eco-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    border: 2px solid white;
+}
+
+.scroll-to-top.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.scroll-to-top:hover {
+    background-color: var(--eco-dark);
+    transform: translateY(-5px);
+}
+
+/* 2. Flash Sale Timer */
+.timer-box {
+    background: var(--eco-dark);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    min-width: 50px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 3. Blog Card Hover */
+.blog-card {
+    transition: all 0.3s ease;
+    border: none;
+    overflow: hidden;
+}
+
+.blog-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.blog-card img {
+    transition: transform 0.5s ease;
+}
+
+.blog-card:hover img {
+    transform: scale(1.05);
+}
+
+/* 4. Parallax Banner Effect */
+.parallax-banner {
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+}
+
+.parallax-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* 5. Client Testimonial */
+.testimonial-card {
+    background: white;
+    border-radius: 15px;
+    position: relative;
+    transition: transform 0.3s;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--eco-primary);
+}
+
+.quote-icon {
+    font-size: 3rem;
+    color: var(--eco-bg);
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    z-index: 0;
+}
+
+/* --- AUTH PAGE (Đăng nhập/Đăng ký) --- */
+.auth-container {
+    min-height: 100vh;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.auth-banner {
+    background-size: cover;
+    background-position: center;
+    height: 100%;
+    position: relative;
+}
+
+.auth-overlay {
+    background: linear-gradient(to bottom, rgba(46, 125, 50, 0.3), rgba(27, 94, 32, 0.8));
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.social-btn {
+    border: 1px solid #ddd;
+    background: white;
+    transition: all 0.2s;
+}
+
+.social-btn:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+/* --- CART PAGE --- */
+.cart-progress {
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.cart-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--eco-secondary), var(--eco-primary));
+    transition: width 1s ease-in-out;
+}
+
+.quantity-input {
+    max-width: 50px;
+    text-align: center;
+    border: none;
+    border-top: 1px solid #ced4da;
+    border-bottom: 1px solid #ced4da;
+}
+
+.btn-qty {
+    border: 1px solid #ced4da;
+    background: white;
+    width: 35px;
+}
+
+/* --- USER PROFILE (Quan trọng) --- */
+.profile-sidebar {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.nav-pills-eco .nav-link {
+    color: var(--eco-text);
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-pills-eco .nav-link:hover {
+    background-color: var(--eco-bg);
+    color: var(--eco-primary);
+}
+
+.nav-pills-eco .nav-link.active {
+    background-color: var(--eco-primary);
+    color: white;
+    box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
+}
+
+.member-card {
+    background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.member-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.order-status-tab .nav-link {
+    color: #666;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 10px;
+}
+
+.order-status-tab .nav-link.active {
+    color: var(--eco-primary);
+    border-bottom: 2px solid var(--eco-primary);
+    font-weight: bold;
+}
+
+/* Đảm bảo Header luôn nằm trên cùng và Sidebar không bị trôi lên header */
+.sticky-top {
+    z-index: 1020 !important;
+    /* Bootstrap header thường là 1030, ta để sidebar thấp hơn */
+}
+
+.navbar-eco {
+    z-index: 1030 !important;
+    /* Header cao nhất */
+}
+
+.sidebar-summary {
+    position: sticky;
+    top: 100px;
+    /* Cách đỉnh màn hình 100px để không đụng Header */
+    z-index: 1000;
+    transition: top 0.3s ease;
+}
+
+/* --- ABOUT PAGE (VỀ CHÚNG TÔI) --- */
+.about-hero {
+    height: 500px;
+    background-attachment: fixed;
+    /* Hiệu ứng Parallax xịn */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.about-card {
+    transition: all 0.4s ease;
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.about-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(46, 125, 50, 0.15);
+}
+
+.team-member-img {
+    transition: transform 0.5s ease;
+    filter: grayscale(20%);
+}
+
+.about-card:hover .team-member-img {
+    transform: scale(1.1);
+    filter: grayscale(0%);
+}
+
+/* --- PRODUCT DETAIL PRO MAX --- */
+.product-gallery-thumb {
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.product-gallery-thumb:hover,
+.product-gallery-thumb.active {
+    border-color: var(--eco-primary);
+    transform: scale(0.95);
+}
+
+.spec-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+/* Hiệu ứng zoom ảnh khi hover */
+.zoom-container {
+    overflow: hidden;
+    border-radius: 12px;
+    cursor: crosshair;
+}
+
+.zoom-img {
+    transition: transform 0.3s ease-out;
+    width: 100%;
+}
+
+.zoom-container:hover .zoom-img {
+    transform: scale(1.5);
+    /* Zoom cực đại */
+}
+
+/* --- GLOBAL SCROLL TO TOP --- */
+.scroll-to-top-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background-color: var(--eco-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.4);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Hiệu ứng nảy */
+    z-index: 1050;
+    /* Cao hơn mọi thứ */
+    border: 2px solid white;
+}
+
+.scroll-to-top-btn.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.scroll-to-top-btn:hover {
+    background-color: var(--eco-dark);
+    transform: translateY(-5px) scale(1.1);
+}
+
+/* --- RELATED PRODUCTS SLIDER (Horizontal) --- */
+.scrolling-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    padding-bottom: 20px;
+}
+
+/* =========================
+   Firefox
+   ========================= */
+@supports (scrollbar-width: thin) {
+    .scrolling-wrapper {
+        scrollbar-width: thin;
+        scrollbar-color: var(--eco-secondary) #f1f1f1;
+    }
+}
+
+/* =========================
+   Chrome, Edge, Safari
+   ========================= */
+.scrolling-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+.scrolling-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.scrolling-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--eco-secondary);
+    border-radius: 10px;
+}
+
+/* --- Card item --- */
+.card-horizontal-item {
+    display: inline-block;
+    width: 280px;
+    margin-right: 20px;
+    white-space: normal; /* Cho text xuống dòng */
+    vertical-align: top;
+}
+
+
+/* --- PROMO BANNER IN GRID --- */
+.promo-banner-grid {
+    background: linear-gradient(45deg, #1B5E20, #2E7D32);
+    color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.3s;
+}
+
+.promo-banner-grid:hover {
+    transform: translateY(-5px);
+}
