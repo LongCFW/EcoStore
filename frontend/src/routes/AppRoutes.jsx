@@ -15,6 +15,9 @@ import CheckoutPage from '../pages/client/CheckoutPage';
 import AboutPage from '../pages/client/AboutPage';
 import OffersPage from '../pages/client/OffersPage';
 
+import AdminLayout from '../layouts/AdminLayout'; 
+import DashboardPage from '../pages/admin/DashboardPage';
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -34,6 +37,12 @@ const AppRoutes = () => {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+      </Route>
+
+      {/* ADMIN ROUTES - Khu vực mới */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<DashboardPage />} />
+        {/* Sẽ thêm /admin/products, /admin/orders sau */}
       </Route>
 
     </Routes>
