@@ -1,0 +1,122 @@
+/* --- STEP WIZARD (Thanh tiến trình) --- */
+.step-wizard {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    position: relative;
+    color: #aaa;
+    font-weight: 600;
+}
+
+.step-item.active {
+    color: var(--eco-primary);
+}
+
+.step-count {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-count {
+    background: var(--gradient-main);
+    color: white;
+    box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
+}
+
+.step-line {
+    width: 60px;
+    height: 3px;
+    background: #e9ecef;
+    margin: 0 15px;
+    border-radius: 10px;
+}
+
+.step-item.active + .step-line {
+    background: var(--eco-light);
+}
+
+/* --- PAYMENT METHOD CARD --- */
+.payment-card {
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.payment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.payment-card.selected {
+    border-color: var(--eco-primary);
+    background-color: rgba(76, 175, 80, 0.05); /* Alpha green */
+}
+
+/* Radio button custom */
+.custom-radio {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-card.selected .custom-radio {
+    border-color: var(--eco-primary);
+}
+
+.payment-card.selected .custom-radio::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--eco-primary);
+    border-radius: 50%;
+}
+
+/* --- STICKY SUMMARY --- */
+.sticky-summary {
+    position: sticky;
+    top: 100px; /* Cách header một chút */
+    transition: top 0.3s ease;
+}
+
+/* --- FORM FLOATING CUSTOM --- */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--eco-primary);
+    opacity: 0.8;
+}
+
+.form-floating > .form-control:focus {
+    border-color: var(--eco-light);
+    box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+    .step-line {
+        width: 20px;
+    }
+    .step-text {
+        display: none; /* Ẩn chữ trên mobile cho gọn */
+    }
+}
