@@ -45,10 +45,10 @@ const ProductListPage = () => {
             <Container className="position-relative z-1">
                 <h2 className="display-5 fw-bold mb-2">Cửa Hàng Xanh</h2>
                 <p className="lead mb-3 opacity-90">Sản phẩm thiên nhiên - Vì sức khỏe của bạn</p>
-                <Breadcrumb className="justify-content-center eco-breadcrumb">
+                {/* <Breadcrumb className="justify-content-center eco-breadcrumb">
                     <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }} className="text-white text-decoration-none">Trang chủ</Breadcrumb.Item>
                     <Breadcrumb.Item active className="text-white fw-bold">Sản phẩm</Breadcrumb.Item>
-                </Breadcrumb>
+                </Breadcrumb> */}
             </Container>
         </div>
 

@@ -2,103 +2,119 @@ import React, { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { FaArrowLeft, FaGoogle, FaFacebookF, FaLeaf } from 'react-icons/fa';
+import '../../assets/styles/auth-profile.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const { login } = useAuth();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Login data:', formData);
-    // Sau này sẽ gọi API login ở đây
-    // Tạm thời giả lập đăng nhập thành công -> chuyển về trang chủ
-    navigate('/'); 
+      e.preventDefault();
+      console.log("Form Data:", formData);
+      // Demo login
+      handleLogin('customer');
   };
 
-  const { login } = useAuth(); // Lấy hàm login từ context
-
   const handleLogin = (role) => {
-    // Gọi hàm login giả lập với role mong muốn
     login(role);
-    // Điều hướng dựa trên role
-    if (role === 'admin' || role === 'manager' || role === 'staff') {
-        navigate('/admin');
-    } else {
-        navigate('/');
-    }
+    navigate(role === 'customer' ? '/' : '/admin');
   };
 
   return (
-    <>
-     <h3 className="fw-bold mb-3 text-center">Đăng Nhập (Demo)</h3>
-      <p className="text-muted text-center mb-4">Chọn quyền để test hệ thống phân quyền</p>
-
-      <div className="d-grid gap-2 mb-3">
-          <Button variant="danger" onClick={() => handleLogin('admin')}>
-             Đăng nhập quyền ADMIN (Full)
-          </Button>
-          <Button variant="warning" onClick={() => handleLogin('manager')}>
-             Đăng nhập quyền MANAGER (No Settings)
-          </Button>
-          <Button variant="info" onClick={() => handleLogin('staff')}>
-             Đăng nhập quyền STAFF (Orders Only)
-          </Button>
-          <Button variant="success" onClick={() => handleLogin('customer')}>
-             Đăng nhập Khách hàng (Về trang chủ)
-          </Button>
+    <div className="auth-wrapper">
+      {/* CỘT ẢNH (BÊN TRÁI) */}
+      <div className="auth-banner-side" style={{backgroundImage: 'url("https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1200&q=80")'}}>
+          <div className="auth-banner-overlay"></div>
+          <div className="auth-banner-content">
+              <div className="bg-white p-3 rounded-circle d-inline-flex mb-4 shadow-lg animate-bounce">
+                  <FaLeaf size={40} className="text-success"/>
+              </div>
+              <h1 className="display-4 fw-bold mb-3">Sống Xanh <br/> Cùng EcoStore</h1>
+              <p className="fs-5 opacity-90">
+                  Đăng nhập để theo dõi đơn hàng, tích điểm đổi quà và nhận những ưu đãi dành riêng cho thành viên Eco.
+              </p>
+          </div>
       </div>
 
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3" controlId="email">
-          <Form.Label>Email</Form.Label>
-          <Form.Control 
-            type="email" 
-            name="email"
-            placeholder="name@example.com" 
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+      {/* CỘT FORM (BÊN PHẢI) */}
+      <div className="auth-form-side">
+          <Link to="/" className="back-home-btn"><FaArrowLeft/> Về trang chủ</Link>
+          
+          <div className="auth-form-container">
+              <div className="text-center mb-5">
+                  <h2 className="fw-bold text-dark mb-2">Chào Mừng Trở Lại!</h2>
+                  <p className="text-muted">Vui lòng đăng nhập tài khoản của bạn</p>
+              </div>
 
-        <Form.Group className="mb-3" controlId="password">
-          <Form.Label>Mật khẩu</Form.Label>
-          <Form.Control 
-            type="password" 
-            name="password"
-            placeholder="Nhập mật khẩu" 
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+              {/* Login nhanh (Demo) */}
+              <div className="d-flex gap-2 justify-content-center mb-4 pb-4 border-bottom">
+                  <Button variant="outline-danger" size="sm" className="rounded-pill" onClick={() => handleLogin('admin')}>Admin</Button>
+                  <Button variant="outline-warning" size="sm" className="rounded-pill" onClick={() => handleLogin('manager')}>Manager</Button>
+                  <Button variant="outline-success" size="sm" className="rounded-pill" onClick={() => handleLogin('customer')}>Khách hàng</Button>
+              </div>
 
-        <div className="d-flex justify-content-between align-items-center mb-4">
-            <Form.Check type="checkbox" label="Ghi nhớ tôi" />
-            <Link to="/forgot-password" className="text-decoration-none small">
-                Quên mật khẩu?
-            </Link>
-        </div>
+              <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3">
+                      <Form.Label className="fw-bold small text-secondary">EMAIL</Form.Label>
+                      <Form.Control 
+                        type="email" 
+                        name="email" 
+                        placeholder="name@example.com" 
+                        className="modern-input" 
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                      />
+                  </Form.Group>
 
-        <Button variant="success" type="submit" className="w-100 py-2 fw-bold mb-3">
-          Đăng Nhập
-        </Button>
+                  <Form.Group className="mb-3">
+                      <Form.Label className="fw-bold small text-secondary">MẬT KHẨU</Form.Label>
+                      <Form.Control 
+                        type="password" 
+                        name="password" 
+                        placeholder="••••••••" 
+                        className="modern-input" 
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                      />
+                  </Form.Group>
 
-        <div className="text-center">
-            <span className="text-muted">Chưa có tài khoản? </span>
-            <Link to="/register" className="text-decoration-none fw-bold">
-                Đăng ký ngay
-            </Link>
-        </div>
-      </Form>
-    </>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                      <Form.Check type="checkbox" label="Ghi nhớ đăng nhập" className="small text-muted" />
+                      <Link to="#" className="text-decoration-none small text-success fw-bold hover-green">Quên mật khẩu?</Link>
+                  </div>
+
+                  <Button variant="success" type="submit" className="w-100 py-3 rounded-pill fw-bold shadow-sm mb-4 text-uppercase gradient-btn">
+                      Đăng Nhập
+                  </Button>
+
+                  <div className="position-relative text-center mb-4">
+                      <hr className="text-muted opacity-25" />
+                      <span className="bg-white px-3 text-muted small position-absolute top-50 start-50 translate-middle">Hoặc tiếp tục với</span>
+                  </div>
+
+                  <div className="d-flex gap-3 mb-4">
+                      <Button variant="outline-light" className="w-50 rounded-pill border text-dark fw-bold d-flex align-items-center justify-content-center gap-2">
+                          <FaGoogle className="text-danger"/> Google
+                      </Button>
+                      <Button variant="outline-light" className="w-50 rounded-pill border text-dark fw-bold d-flex align-items-center justify-content-center gap-2">
+                          <FaFacebookF className="text-primary"/> Facebook
+                      </Button>
+                  </div>
+
+                  <div className="text-center mt-4">
+                      <span className="text-muted">Chưa có tài khoản? </span>
+                      <Link to="/register" className="text-decoration-none fw-bold text-success hover-green">Đăng ký ngay</Link>
+                  </div>
+              </Form>
+          </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,0 +1,282 @@
+/* --- 1. AUTH PAGES (MODERN SPLIT LAYOUT) --- */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    background: #fff;
+    overflow-x: hidden; /* Tránh thanh cuộn ngang */
+}
+
+/* Cột Ảnh (Trái hoặc Phải) */
+.auth-banner-side {
+    flex: 1.5; /* Chiếm 60% chiều rộng */
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    /* Mặc định ẩn trên mobile */
+    display: none; 
+}
+
+@media (min-width: 992px) {
+    .auth-banner-side {
+        display: flex;
+    }
+}
+
+.auth-banner-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(15, 61, 40, 0.9), rgba(46, 125, 50, 0.7));
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+.auth-banner-content {
+    position: relative;
+    z-index: 2;
+    padding: 60px;
+    max-width: 600px;
+    text-align: center;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+/* Cột Form */
+.auth-form-side {
+    flex: 1; /* Chiếm 40% */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 60px;
+    background: #fff;
+    position: relative;
+    min-height: 100vh;
+}
+
+.auth-form-container {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Input Styles */
+.modern-input {
+    border: 2px solid #f0f2f5 !important;
+    border-radius: 12px !important;
+    padding: 14px 20px !important;
+    font-size: 0.95rem !important;
+    background-color: #f9f9f9 !important;
+    transition: all 0.3s ease !important;
+}
+
+.modern-input:focus {
+    background-color: #fff !important;
+    border-color: var(--eco-primary) !important;
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1) !important;
+}
+
+.back-home-btn {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    text-decoration: none;
+    color: #666;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    background: #f8f9fa;
+    transition: all 0.3s;
+    z-index: 10;
+}
+
+.back-home-btn:hover {
+    background: var(--eco-primary);
+    color: white;
+    transform: translateX(-5px);
+}
+
+/* --- 2. PROFILE DASHBOARD --- */
+.profile-wrapper {
+    background-color: #f3f4f6;
+    min-height: 100vh;
+    padding: 40px 0;
+}
+
+/* Sidebar */
+.profile-sidebar {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    overflow: hidden;
+    height: 100%;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.avatar-container {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 15px;
+    position: relative;
+    border-radius: 50%;
+    padding: 5px;
+    background: linear-gradient(135deg, var(--eco-primary), #81c784);
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    aspect-ratio: 1/1; /* Tròn tuyệt đối */
+    border: 4px solid white;
+    background-color: white;
+}
+
+/* Menu Item */
+.profile-menu-item {
+    padding: 16px 30px;
+    color: #555;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+}
+
+.profile-menu-item:hover {
+    background-color: #f9f9f9;
+    color: var(--eco-primary);
+    padding-left: 35px;
+}
+
+.profile-menu-item.active {
+    background: linear-gradient(to right, rgba(76, 175, 80, 0.08), transparent);
+    color: var(--eco-primary);
+    border-left-color: var(--eco-primary);
+    font-weight: 700;
+}
+
+/* Content Card */
+.profile-content-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    padding: 40px;
+    min-height: 100%;
+    border: 1px solid rgba(0,0,0,0.05);
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Avatar Upload Button */
+.avatar-upload-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-main);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+}
+
+.avatar-upload-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Custom Gender Radio (Segmented Control) */
+.gender-selector {
+    display: flex;
+    background: #f1f3f5;
+    padding: 5px;
+    border-radius: 12px;
+}
+
+.gender-option {
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.gender-option input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.gender-label {
+    display: block;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.gender-option input:checked + .gender-label {
+    background: white;
+    color: var(--eco-primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Notifications */
+.noti-item {
+    transition: background 0.2s;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    border: 1px solid transparent;
+}
+
+.noti-item:hover {
+    background-color: #f8f9fa;
+    border-color: #eee;
+}
+
+.noti-item.unread {
+    background-color: #f0fdf4;
+    border-left: 4px solid var(--eco-primary);
+}
+
+/* --- MOBILE RESPONSIVE --- */
+@media (max-width: 768px) {
+    .auth-form-side {
+        padding: 20px;
+    }
+    
+    .profile-content-card {
+        padding: 20px;
+        border-radius: 15px;
+    }
+    
+    .back-home-btn {
+        top: 15px;
+        left: 15px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+}
