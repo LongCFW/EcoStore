@@ -109,6 +109,23 @@ const CartPage = () => {
 
         {/* Cột Phải: Tổng quan đơn hàng */}
         <Col lg={4}>
+        
+          {/* START: Phần nhập mã giảm giá */}
+          <Card className="shadow-sm border-0 mb-3">
+            <Card.Body>
+              <h6 className="fw-bold mb-2">Mã giảm giá</h6>
+              <div className="input-group">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Nhập mã voucher"
+                />
+                <Button variant="outline-success">Áp dụng</Button>
+              </div>
+            </Card.Body>
+          </Card>
+          {/* END: Phần nhập mã giảm giá */}
+
           <Card className="shadow-sm border-0">
             <Card.Body>
               <h5 className="fw-bold mb-3">Cộng giỏ hàng</h5>

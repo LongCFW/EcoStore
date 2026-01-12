@@ -12,6 +12,8 @@ import RegisterPage from '../pages/auth/RegisterPage';
 import UserProfilePage from '../pages/client/UserProfilePage';
 import ProductListPage from '../pages/client/ProductListPage'; 
 import CheckoutPage from '../pages/client/CheckoutPage';
+import AboutPage from '../pages/client/AboutPage';
+import OffersPage from '../pages/client/OffersPage';
 
 const AppRoutes = () => {
   return (
@@ -24,6 +26,8 @@ const AppRoutes = () => {
         <Route path="/profile" element={<UserProfilePage />} />
         <Route path="/products" element={<ProductListPage />} /> 
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/offers" element={<OffersPage />} />
       </Route>
 
       {/* Auth Routes - Dùng AuthLayout */}

@@ -30,6 +30,9 @@ const Header = () => {
             <Nav.Link as={NavLink} to="/products">
               Sản phẩm
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/offers">
+              Ưu đãi
+            </Nav.Link>
             <Nav.Link as={NavLink} to="/about">
               Giới thiệu
             </Nav.Link>

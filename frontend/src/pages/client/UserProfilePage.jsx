@@ -6,8 +6,8 @@ import OrderHistory from '../../components/profile/OrderHistory';
 import AddressList from '../../components/profile/AddressList'; 
 import WishlistTab from '../../components/profile/WishlistTab'; 
 import NotificationTab from '../../components/profile/NotificationTab'; 
+import MyVouchers from '../../components/profile/MyVouchers';
 
-// Component ChangePassword đơn giản (giữ nguyên hoặc tách nếu muốn)
 const ChangePassword = () => (
     <Card className="border-0 shadow-sm p-4">
         <h4 className="fw-bold mb-4">Đổi mật khẩu</h4>
@@ -29,6 +29,7 @@ const UserProfilePage = () => {
         case 'orders': return <OrderHistory />;
         case 'addresses': return <AddressList />;
         case 'wishlist': return <WishlistTab />; 
+        case 'vouchers': return <MyVouchers />;
         case 'notifications': return <NotificationTab />; 
         case 'password': return <ChangePassword />;
         default: return <ProfileInfo />;

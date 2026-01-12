@@ -1,6 +1,6 @@
 import React from 'react';
 import { ListGroup, Card } from 'react-bootstrap';
-import { FaUser, FaClipboardList, FaMapMarkerAlt, FaLock, FaSignOutAlt, FaHeart, FaBell } from 'react-icons/fa'; // Import thêm icon
+import { FaUser, FaClipboardList, FaMapMarkerAlt, FaLock, FaSignOutAlt, FaHeart, FaBell, FaTicketAlt } from 'react-icons/fa';
 
 const ProfileSidebar = ({ activeTab, setActiveTab }) => {
   const menuItems = [
@@ -8,6 +8,7 @@ const ProfileSidebar = ({ activeTab, setActiveTab }) => {
     { id: 'orders', label: 'Quản lý đơn hàng', icon: <FaClipboardList /> },
     { id: 'addresses', label: 'Sổ địa chỉ', icon: <FaMapMarkerAlt /> },
     { id: 'wishlist', label: 'Sản phẩm yêu thích', icon: <FaHeart /> }, 
+    { id: 'vouchers', label: 'Kho Voucher', icon: <FaTicketAlt /> },
     { id: 'notifications', label: 'Thông báo', icon: <FaBell /> }, 
     { id: 'password', label: 'Đổi mật khẩu', icon: <FaLock /> },
   ];
