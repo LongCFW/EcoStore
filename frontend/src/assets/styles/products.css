@@ -1,0 +1,173 @@
+/* --- PRODUCT CARD STYLES --- */
+.product-card-wrapper {
+    position: relative;
+    border-radius: 15px;
+    overflow: hidden;
+    background: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.product-card-wrapper:hover {
+    box-shadow: 0 15px 30px rgba(46, 125, 50, 0.15);
+    transform: translateY(-5px);
+}
+
+.product-img-container {
+    position: relative;
+    overflow: hidden;
+    height: 250px;
+}
+
+.product-img-container img {
+    transition: transform 0.5s ease;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-card-wrapper:hover .product-img-container img {
+    transform: scale(1.1);
+}
+
+/* Lớp phủ chứa nút bấm (Action Overlay) */
+.card-actions-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+}
+
+.product-card-wrapper:hover .card-actions-overlay {
+    opacity: 1;
+}
+
+/* Nút trong overlay */
+.action-btn {
+    background: white;
+    color: var(--eco-primary);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    width: 140px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    text-decoration: none; /* Cho thẻ Link */
+    text-align: center;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 5px;
+}
+
+.action-btn:hover {
+    background: var(--gradient-main);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* --- SIDEBAR FILTER (Glassy) --- */
+.filter-sidebar {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    border: 1px solid rgba(46, 125, 50, 0.1);
+}
+
+.filter-group-title {
+    font-weight: 700;
+    color: var(--eco-dark);
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #555;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.filter-item:hover {
+    color: var(--eco-primary);
+}
+
+/* Custom Checkbox */
+.form-check-input:checked {
+    background-color: var(--eco-primary);
+    border-color: var(--eco-primary);
+}
+
+/* --- PAGINATION --- */
+.eco-pagination .page-link {
+    color: var(--eco-primary);
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 5px;
+    transition: all 0.2s;
+}
+
+.eco-pagination .page-item.active .page-link {
+    background: var(--gradient-main);
+    color: white;
+    box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
+}
+
+.eco-pagination .page-link:hover {
+    background: rgba(76, 175, 80, 0.1);
+    color: var(--eco-dark);
+}
+
+/* --- DETAIL PAGE --- */
+.product-gallery-thumb {
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+.product-gallery-thumb.active {
+    border-color: var(--eco-primary);
+}
+
+.price-tag-detail {
+    background: rgba(76, 175, 80, 0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+    display: inline-block;
+    color: var(--eco-primary);
+}
+
+/* --- MOBILE RESPONSIVE --- */
+@media (max-width: 768px) {
+    /* Trên mobile, overlay hiện nút bấm luôn hoặc dùng icon nhỏ góc */
+    /* Ở đây ta giữ logic hover cho desktop, mobile click vào ảnh sẽ vào detail */
+    .card-actions-overlay {
+        display: none; /* Tạm ẩn overlay trên mobile để đỡ rối, click thẳng vào ảnh */
+    }
+    
+    .filter-sidebar {
+        border-radius: 0; /* Cho Offcanvas */
+    }
+}

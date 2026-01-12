@@ -1,11 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { Container, Row, Col, Button, Carousel, Card, Badge } from "react-bootstrap";
 import { FaShippingFast, FaLeaf, FaMedal, FaArrowRight, FaClock } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import ProductCard from "../../components/product/ProductCard";
 import '../../assets/styles/home.css'; // Import CSS riêng
+import QuickViewModal from "../../components/product/QuickViewModal";
 
 const HomePage = () => {
+
+    // State cho Quick View
+  const [showQuickView, setShowQuickView] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const handleQuickView = (product) => {
+    setSelectedProduct(product);
+    setShowQuickView(true);
+  };
+
+
   // Dữ liệu giả sản phẩm (Trộn lẫn Food và Non-food)
   const products = [
     { id: 1, name: "Cà chua bi hữu cơ (500g)", price: 35000, salePrice: 28000, image: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&w=600&q=80", category: "Rau củ" },
@@ -38,8 +50,7 @@ const HomePage = () => {
     <>
       {/* 1. HERO SECTION (CAROUSEL - 5 SLIDES) */}
       <section className="mb-5">
-        <Carousel className="hero-section" interval={3000} fade>
-            
+        <Carousel className="hero-section" interval={3000} fade>            
             {/* Slide 1: Rau củ (Giữ nguyên cái bạn thích) */}
             <Carousel.Item>
                 <div className="hero-slide" style={{backgroundImage: 'url("https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1500&q=80")'}}>
@@ -172,7 +183,8 @@ const HomePage = () => {
             <Row xs={1} md={2} lg={4} className="g-4">
                 {products.slice(0, 4).map((product) => (
                     <Col key={product.id}>
-                        <ProductCard product={product} />
+                        {/* UPDATE: Truyền handleQuickView */}
+                        <ProductCard product={product} onQuickView={handleQuickView} />
                     </Col>
                 ))}
             </Row>
@@ -250,7 +262,8 @@ const HomePage = () => {
             <Row xs={1} md={2} lg={4} className="g-4">
                 {products.slice(4, 8).map((product) => (
                     <Col key={product.id}>
-                        <ProductCard product={product} />
+                        {/* UPDATE: Truyền handleQuickView */}
+                        <ProductCard product={product} onQuickView={handleQuickView} />
                     </Col>
                 ))}
             </Row>
@@ -285,6 +298,13 @@ const HomePage = () => {
             </Row>
         </Container>
       </section>
+
+      {/* QUICK VIEW MODAL COMPONENT */}
+      <QuickViewModal 
+        show={showQuickView} 
+        handleClose={() => setShowQuickView(false)} 
+        product={selectedProduct} 
+      />
     </>
   );
 };
