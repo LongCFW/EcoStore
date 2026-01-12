@@ -20,6 +20,8 @@ import DashboardPage from "../pages/admin/DashboardPage";
 import ProductManager from "../pages/admin/ProductManager";
 import OrderManager from "../pages/admin/OrderManager";
 import CustomerManager from "../pages/admin/CustomerManager";
+import StatsPage from "../pages/admin/StatsPage";
+import SettingsPage from "../pages/admin/SettingsPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
@@ -78,9 +80,14 @@ const AppRoutes = () => {
             <Route path="customers" element={<CustomerManager />} />
           </Route>
 
-          {/* 5. Cấu hình/Thống kê sâu: Chỉ Admin */}
+          {/* 5. Thống kê: Chỉ Admin */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            {/* <Route path="settings" element={<SettingsPage />} /> */}
+            <Route path="stats" element={<StatsPage />} />
+          </Route>
+
+          {/* 6. Cấu hình: Chỉ Admin */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route path="settings" element={<SettingsPage />} />{" "}
           </Route>
         </Route>
       </Route>
