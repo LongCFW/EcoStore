@@ -1,0 +1,125 @@
+/* --- 1. DESIGN TOKENS (Biến màu & Hiệu ứng) --- */
+:root {
+  /* Màu chủ đạo: Xanh lá tự nhiên */
+  --eco-primary: #2e7d32; /* Xanh lá đậm */
+  --eco-light: #4caf50;   /* Xanh lá tươi */
+  --eco-dark: #1b5e20;    /* Xanh rêu */
+  
+  /* Màu Gradient */
+  --gradient-main: linear-gradient(135deg, #43a047 0%, #1de9b6 100%);
+  --gradient-hover: linear-gradient(135deg, #2e7d32 0%, #00bfa5 100%);
+  --gradient-text: linear-gradient(to right, #2e7d32, #1de9b6);
+  
+  /* Màu nền & Alpha (Glassmorphism) */
+  --bg-body: #f1f8e9; /* Xanh cực nhạt làm nền web */
+  --glass-bg: rgba(255, 255, 255, 0.7); /* Nền kính trắng mờ */
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  
+  /* Font & Spacing */
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --radius-card: 16px;
+  --radius-btn: 50px; /* Nút bo tròn nhiều */
+}
+
+/* --- 2. GLOBAL RESET & BASE STYLES --- */
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-body);
+  background-image: radial-gradient(circle at 10% 20%, rgba(46, 125, 50, 0.05) 0%, transparent 20%),
+                    radial-gradient(circle at 90% 80%, rgba(29, 233, 182, 0.1) 0%, transparent 20%);
+  color: #333;
+  line-height: 1.6;
+}
+
+/* Scrollbar đẹp hơn */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #a5d6a7;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--eco-primary);
+}
+
+/* --- 3. CUSTOM BOOTSTRAP OVERRIDES --- */
+
+/* Nút bấm (Button) - Style Gradient */
+.btn-success, .btn-primary {
+  background: var(--gradient-main) !important;
+  border: none !important;
+  border-radius: var(--radius-btn) !important;
+  font-weight: 600 !important;
+  padding: 10px 24px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(46, 125, 50, 0.2);
+}
+
+.btn-success:hover, .btn-primary:hover {
+  background: var(--gradient-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
+}
+
+/* Card - Hiệu ứng kính (Glassmorphism) */
+.card {
+  background: var(--glass-bg) !important;
+  
+  /* FIX: Thêm prefix -webkit- trước và thuộc tính chuẩn sau */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px) !important;
+  
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-card) !important;
+  box-shadow: var(--glass-shadow) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15) !important;
+}
+
+/* Navbar */
+.navbar {
+  background: rgba(255, 255, 255, 0.85) !important;
+  
+  /* FIX: Thêm prefix -webkit- cho Safari */
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  
+  border-bottom: 1px solid rgba(46, 125, 50, 0.1);
+}
+
+/* Text Gradient Effect */
+.text-gradient {
+  background: var(--gradient-text);
+  
+  /* FIX: Khai báo đầy đủ cả vendor prefix và standard property */
+  -webkit-background-clip: text;
+  background-clip: text;
+  
+  -webkit-text-fill-color: transparent;
+  /* Thêm color: transparent để fallback cho các trình duyệt hỗ trợ clip nhưng không hỗ trợ text-fill */
+  color: transparent; 
+  
+  font-weight: bold;
+}
+
+/* --- 4. RESPONSIVE UTILITIES --- */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  /* Card trên mobile giảm shadow để nhẹ máy */
+  .card:hover {
+    transform: none;
+  }
+}
