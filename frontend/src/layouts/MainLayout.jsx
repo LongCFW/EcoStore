@@ -1,36 +1,28 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
-import { Container, Navbar, Nav } from "react-bootstrap";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { Container } from 'react-bootstrap';
+import Header from '../components/common/Header'; // Import Header mới
 
 const MainLayout = () => {
   return (
-    <>
-      {/* Header tạm thời dùng Navbar của Bootstrap */}
-      <Navbar bg="dark" variant="dark" expand="lg">
-        <Container>
-          <Navbar.Brand href="/">EcoStore</Navbar.Brand>
-          <Nav className="me-auto">
-            <Nav.Link href="/">Home</Nav.Link>
-            <Nav.Link href="/cart">Cart</Nav.Link>
-            <Nav.Link href="/login">Login</Nav.Link>
-          </Nav>
-        </Container>
-      </Navbar>
+    <div className="d-flex flex-column min-vh-100 bg-light">
+      {/* Header mới */}
+      <Header />
 
-      {/* Outlet là nơi nội dung của các trang con (Home, Product...) sẽ hiển thị */}
-      <main className="py-4">
+      {/* Nội dung chính */}
+      <main className="flex-grow-1 py-4">
         <Container>
-          <Outlet />
+           <Outlet /> 
         </Container>
       </main>
 
-      {/* Footer tạm thời */}
-      <footer className="bg-light text-center py-3 mt-auto border-top">
+      {/* Footer (Giữ tạm hoặc tách ra file riêng sau) */}
+      <footer className="bg-dark text-white text-center py-4 mt-auto">
         <Container>
-          <p>© 2025 EcoStore. All rights reserved.</p>
+          <p className="mb-0">© 2025 EcoStore. All rights reserved.</p>
         </Container>
       </footer>
-    </>
+    </div>
   );
 };
 
