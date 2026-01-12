@@ -123,3 +123,74 @@ body {
     transform: none;
   }
 }
+
+/* --- 5. CUSTOM COMPONENTS STYLES --- */
+
+/* Footer Links Hover Effect */
+.hover-white:hover {
+    color: #fff !important;
+    text-decoration: underline !important;
+    transition: color 0.3s ease;
+}
+
+/* Social Icons Hover */
+.footer-social-icon:hover {
+    background-color: var(--eco-primary);
+    border-color: var(--eco-primary);
+    transform: translateY(-3px);
+}
+
+/* Remove dropdown arrow in header user menu if needed */
+.after-none::after {
+    display: none !important;
+}
+
+/* --- FOOTER & INPUT STYLES --- */
+
+/* Footer Input Placeholder màu sáng */
+.footer-input::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.footer-input:focus {
+    background-color: #212529 !important; /* Giữ nền tối khi click */
+    color: white !important;
+    border-color: var(--eco-light) !important;
+    box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25) !important;
+}
+
+/* --- HEADER HOVER EFFECTS --- */
+
+/* Hover text màu xanh */
+.hover-green:hover {
+    color: var(--eco-primary) !important;
+    transition: color 0.2s ease;
+}
+
+/* Icon hover rung nhẹ */
+.cart-icon-hover:hover, .user-icon-hover:hover {
+    transform: scale(1.1);
+    background-color: #e8f5e9 !important; /* Xanh rất nhạt */
+    border-color: var(--eco-primary) !important;
+}
+
+/* Xóa mũi tên dropdown mặc định của bootstrap */
+.after-none::after {
+    display: none !important;
+}
+
+/* Hiệu ứng trượt lên cho Dropdown Menu */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slideUp 0.3s ease forwards;
+}

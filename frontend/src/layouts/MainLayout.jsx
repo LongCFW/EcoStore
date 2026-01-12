@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import Header from '../components/common/Header'; // Import Header mới
+import Footer from '../components/common/Footer';
 
 const MainLayout = () => {
   return (
@@ -17,11 +18,7 @@ const MainLayout = () => {
       </main>
 
       {/* Footer (Giữ tạm hoặc tách ra file riêng sau) */}
-      <footer className="bg-dark text-white text-center py-4 mt-auto">
-        <Container>
-          <p className="mb-0">© 2025 EcoStore. All rights reserved.</p>
-        </Container>
-      </footer>
+      <Footer />
     </div>
   );
 };
