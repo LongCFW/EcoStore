@@ -1,28 +1,27 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import MainLayout from '../layouts/MainLayout';
-import AuthLayout from '../layouts/AuthLayout'; 
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import MainLayout from "../layouts/MainLayout";
+import AuthLayout from "../layouts/AuthLayout";
 
-import HomePage from '../pages/client/HomePage';
-import ProductDetailPage from '../pages/client/ProductDetailPage';
-import CartPage from '../pages/client/CartPage';
+import HomePage from "../pages/client/HomePage";
+import ProductDetailPage from "../pages/client/ProductDetailPage";
+import CartPage from "../pages/client/CartPage";
 
-import LoginPage from '../pages/auth/LoginPage';
-import RegisterPage from '../pages/auth/RegisterPage'; 
-import UserProfilePage from '../pages/client/UserProfilePage';
-import ProductListPage from '../pages/client/ProductListPage'; 
-import CheckoutPage from '../pages/client/CheckoutPage';
-import AboutPage from '../pages/client/AboutPage';
-import OffersPage from '../pages/client/OffersPage';
+import LoginPage from "../pages/auth/LoginPage";
+import RegisterPage from "../pages/auth/RegisterPage";
+import UserProfilePage from "../pages/client/UserProfilePage";
+import ProductListPage from "../pages/client/ProductListPage";
+import CheckoutPage from "../pages/client/CheckoutPage";
+import AboutPage from "../pages/client/AboutPage";
+import OffersPage from "../pages/client/OffersPage";
 
-import AdminLayout from '../layouts/AdminLayout'; 
-import DashboardPage from '../pages/admin/DashboardPage';
-import ProductManager from '../pages/admin/ProductManager';
-import OrderManager from '../pages/admin/OrderManager';
+import AdminLayout from "../layouts/AdminLayout";
+import DashboardPage from "../pages/admin/DashboardPage";
+import ProductManager from "../pages/admin/ProductManager";
+import OrderManager from "../pages/admin/OrderManager";
+import CustomerManager from "../pages/admin/CustomerManager";
 
-
-
-import ProtectedRoute from './ProtectedRoute';
+import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -32,7 +31,7 @@ const AppRoutes = () => {
         <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/profile" element={<UserProfilePage />} />
-        <Route path="/products" element={<ProductListPage />} /> 
+        <Route path="/products" element={<ProductListPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/offers" element={<OffersPage />} />
@@ -45,32 +44,46 @@ const AppRoutes = () => {
       </Route>
 
       {/* ADMIN ROUTES - PHÂN QUYỀN Ở ĐÂY */}
-      
+
       {/* 1. Dashboard: Ai là nhân viên trở lên đều vào được Layout Admin */}
-      <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            
-            {/* Dashboard: Staff xem được (hoặc chặn nếu muốn) */}
-            <Route index element={<DashboardPage />} />
-            
-            {/* 2. Quản lý Sản phẩm: Chỉ Admin và Manager */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
-               <Route path="products" element={<ProductManager />} />                
-            </Route>
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager", "staff"]} />
+        }
+      >
+        <Route path="/admin" element={<AdminLayout />}>
+          {/* Dashboard: Staff xem được (hoặc chặn nếu muốn) */}
+          <Route index element={<DashboardPage />} />
 
-            {/* 3. Quản lý Đơn hàng: Cả 3 đều được vào */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
-               <Route path="orders" element={<OrderManager />} />
-            </Route>
-
-             {/* 4. Cấu hình/Thống kê sâu: Chỉ Admin */}
-             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-               {/* <Route path="settings" element={<SettingsPage />} /> */}
-            </Route>
-
+          {/* 2. Quản lý Sản phẩm: Chỉ Admin và Manager */}
+          <Route
+            element={<ProtectedRoute allowedRoles={["admin", "manager"]} />}
+          >
+            <Route path="products" element={<ProductManager />} />
           </Route>
-      </Route>
 
+          {/* 3. Quản lý Đơn hàng: Cả 3 đều được vào */}
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["admin", "manager", "staff"]} />
+            }
+          >
+            <Route path="orders" element={<OrderManager />} />
+          </Route>
+
+          {/* 4. Quản lý Khách hàng*/}
+          <Route
+            element={<ProtectedRoute allowedRoles={["admin", "manager"]} />}
+          >
+            <Route path="customers" element={<CustomerManager />} />
+          </Route>
+
+          {/* 5. Cấu hình/Thống kê sâu: Chỉ Admin */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            {/* <Route path="settings" element={<SettingsPage />} /> */}
+          </Route>
+        </Route>
+      </Route>
     </Routes>
   );
 };
