@@ -17,6 +17,7 @@ import OffersPage from '../pages/client/OffersPage';
 
 import AdminLayout from '../layouts/AdminLayout'; 
 import DashboardPage from '../pages/admin/DashboardPage';
+import ProductManager from '../pages/admin/ProductManager';
 
 import ProtectedRoute from './ProtectedRoute';
 const AppRoutes = () => {
@@ -51,7 +52,7 @@ const AppRoutes = () => {
             
             {/* 2. Quản lý Sản phẩm: Chỉ Admin và Manager */}
             <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
-               {/* <Route path="products" element={<ProductManager />} /> */} 
+               <Route path="products" element={<ProductManager />} /> 
                {/* Tạm thời chưa có file ProductManager nên tôi comment lại */}
             </Route>
 
