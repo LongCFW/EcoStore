@@ -1,27 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
+import AdminHeader from '../components/admin/AdminHeader';
+import { AdminThemeProvider } from '../context/AdminThemeProvider';
+import '../assets/styles/admin.css'; // Import CSS Admin
 
 const AdminLayout = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
-    <div className="d-flex">
-      {/* Sidebar cố định bên trái */}
-      <AdminSidebar />
+    // Bọc toàn bộ layout trong Provider để dùng được Theme
+    <AdminThemeProvider>
+        <div className="admin-layout">
+            {/* Sidebar */}
+            <AdminSidebar isOpen={isSidebarOpen} closeSidebar={closeSidebar} />
 
-      {/* Nội dung chính bên phải */}
-      <div className="flex-grow-1 bg-light" style={{ marginLeft: '250px', minHeight: '100vh' }}>
-        {/* Header nhỏ của Admin (nếu cần) */}
-        <header className="bg-white shadow-sm py-3 px-4 d-flex justify-content-between align-items-center">
-            <h5 className="m-0 fw-bold text-secondary">Trang Quản Trị</h5>
-            {/* Có thể thêm nút thông báo hoặc search ở đây */}
-        </header>
+            {/* Main Content Area */}
+            <div className="admin-main">
+                {/* Header */}
+                <AdminHeader toggleSidebar={toggleSidebar} />
 
-        {/* Nơi hiển thị các trang con */}
-        <main className="p-4">
-            <Outlet />
-        </main>
-      </div>
-    </div>
+                {/* Content Pages */}
+                <main className="admin-content">
+                    <Outlet />
+                </main>
+            </div>
+        </div>
+    </AdminThemeProvider>
   );
 };
 

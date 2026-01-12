@@ -1,61 +1,63 @@
 import React from 'react';
-import { Nav } from 'react-bootstrap';
 import { NavLink, Link } from 'react-router-dom';
 import { 
     FaTachometerAlt, FaBox, FaShoppingBag, FaUsers, 
-    FaChartBar, FaSignOutAlt, FaCogs , FaShieldAlt
+    FaChartBar, FaCogs , FaShieldAlt, FaLeaf
 } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext'; // Import hook lấy user
+import { useAuth } from '../../context/AuthContext';
 
-const AdminSidebar = () => {
-  const { user, logout } = useAuth(); // Lấy thông tin user và hàm logout
+const AdminSidebar = ({ isOpen, closeSidebar }) => {
+  const { user } = useAuth();
 
-  // Định nghĩa menu và quyền được phép thấy
   const menuItems = [
     { path: '/admin', label: 'Dashboard', icon: <FaTachometerAlt />, roles: ['admin', 'manager', 'staff'] },
-    { path: '/admin/products', label: 'Quản lý Sản phẩm', icon: <FaBox />, roles: ['admin', 'manager'] },
-    { path: '/admin/orders', label: 'Quản lý Đơn hàng', icon: <FaShoppingBag />, roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/products', label: 'Sản phẩm', icon: <FaBox />, roles: ['admin', 'manager'] },
+    { path: '/admin/orders', label: 'Đơn hàng', icon: <FaShoppingBag />, roles: ['admin', 'manager', 'staff'] },
     { path: '/admin/customers', label: 'Khách hàng', icon: <FaUsers />, roles: ['admin', 'manager'] },
     { path: '/admin/stats', label: 'Thống kê', icon: <FaChartBar />, roles: ['admin'] },
     { path: '/admin/settings', label: 'Cấu hình', icon: <FaCogs />, roles: ['admin'] },
-    { path: '/admin/logs', label: 'Nhật ký hệ thống', icon: <FaShieldAlt />, roles: ['admin'] }
+    { path: '/admin/logs', label: 'Nhật ký', icon: <FaShieldAlt />, roles: ['admin'] }
   ];
 
   return (
-    <div className="bg-dark text-white d-flex flex-column p-3 vh-100 position-fixed" style={{width: '250px', zIndex: 1000}}>
-      <Link to="/admin" className="text-decoration-none text-white mb-4">
-        <h3 className="fw-bold text-success">EcoAdmin</h3>
-      </Link>
-      
-      <Nav className="flex-column gap-2 flex-grow-1">
-        {menuItems.map((item, index) => {
-            // Kiểm tra: Nếu role của user nằm trong danh sách được phép thì mới render
-            if (user && item.roles.includes(user.role)) {
-                return (
-                    <Nav.Item key={index}>
-                        <Nav.Link as={NavLink} to={item.path} end className="text-white d-flex align-items-center gap-2">
-                            {item.icon} {item.label}
-                        </Nav.Link>
-                    </Nav.Item>
-                );
-            }
-            return null;
-        })}
-      </Nav>
+    <>
+        {/* Overlay cho Mobile khi mở menu */}
+        {isOpen && <div className="sidebar-overlay d-lg-none" onClick={closeSidebar}></div>}
 
-      <div className="mt-auto border-top pt-3">
-         <div className="d-flex align-items-center gap-2 mb-3">
-            <img src={user?.avatar || "https://via.placeholder.com/40"} alt="Admin" className="rounded-circle" style={{width: 40, height: 40}} />
-            <div className="overflow-hidden">
-                <div className="fw-bold small text-truncate">{user?.name}</div>
-                <div className="text-muted small text-capitalize" style={{fontSize: '0.7rem'}}>{user?.role}</div>
+        <div className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
+            {/* Logo */}
+            <div className="sidebar-logo text-white">
+                <FaLeaf className="me-2 text-warning"/> EcoAdmin
             </div>
-         </div>
-         <button onClick={logout} className="btn btn-outline-danger w-100 btn-sm d-flex align-items-center justify-content-center gap-2">
-            <FaSignOutAlt /> Đăng xuất
-         </button>
-      </div>
-    </div>
+            
+            {/* Menu */}
+            <nav className="sidebar-menu custom-scrollbar">
+                <div className="text-white-50 small fw-bold text-uppercase mb-2 px-3">Menu Chính</div>
+                {menuItems.map((item, index) => {
+                    if (user && item.roles.includes(user.role)) {
+                        return (
+                            <NavLink 
+                                key={index} 
+                                to={item.path} 
+                                end={index === 0} // Chỉ Dashboard cần exact match
+                                className={({isActive}) => `sidebar-link ${isActive ? 'active' : ''}`}
+                                onClick={closeSidebar} // Đóng menu khi click (mobile)
+                            >
+                                <span className="fs-5">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </NavLink>
+                        );
+                    }
+                    return null;
+                })}
+            </nav>
+
+            {/* Footer nhỏ bên dưới sidebar */}
+            <div className="p-3 border-top border-secondary border-opacity-25 text-center text-white-50 small">
+                © 2025 EcoStore System
+            </div>
+        </div>
+    </>
   );
 };
 

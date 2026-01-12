@@ -23,6 +23,7 @@ import CustomerManager from "../pages/admin/CustomerManager";
 import StatsPage from "../pages/admin/StatsPage";
 import SettingsPage from "../pages/admin/SettingsPage";
 import SystemLogPage from '../pages/admin/SystemLogPage';
+import AdminProfile from "../pages/admin/AdminProfile";
 
 import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
@@ -57,6 +58,8 @@ const AppRoutes = () => {
         <Route path="/admin" element={<AdminLayout />}>
           {/* Dashboard: Staff xem được (hoặc chặn nếu muốn) */}
           <Route index element={<DashboardPage />} />
+          
+          <Route path="profile" element={<AdminProfile />}/>
 
           {/* 2. Quản lý Sản phẩm: Chỉ Admin và Manager */}
           <Route
