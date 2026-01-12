@@ -10,6 +10,8 @@ import CartPage from '../pages/client/CartPage';
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage'; 
 import UserProfilePage from '../pages/client/UserProfilePage';
+import ProductListPage from '../pages/client/ProductListPage'; 
+import CheckoutPage from '../pages/client/CheckoutPage';
 
 const AppRoutes = () => {
   return (
@@ -20,6 +22,8 @@ const AppRoutes = () => {
         <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/profile" element={<UserProfilePage />} />
+        <Route path="/products" element={<ProductListPage />} /> 
+        <Route path="/checkout" element={<CheckoutPage />} />
       </Route>
 
       {/* Auth Routes - Dùng AuthLayout */}
