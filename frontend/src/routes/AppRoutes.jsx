@@ -22,6 +22,7 @@ import OrderManager from "../pages/admin/OrderManager";
 import CustomerManager from "../pages/admin/CustomerManager";
 import StatsPage from "../pages/admin/StatsPage";
 import SettingsPage from "../pages/admin/SettingsPage";
+import SystemLogPage from '../pages/admin/SystemLogPage';
 
 import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
@@ -87,8 +88,10 @@ const AppRoutes = () => {
 
           {/* 6. Cấu hình: Chỉ Admin */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path="settings" element={<SettingsPage />} />{" "}
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="logs" element={<SystemLogPage />} />
           </Route>
+          
         </Route>
       </Route>
     </Routes>

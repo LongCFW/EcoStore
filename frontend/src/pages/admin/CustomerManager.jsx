@@ -4,7 +4,6 @@ import { FaSearch, FaEye, FaUnlock, FaLock } from 'react-icons/fa';
 import CustomerDetailModal from '../../components/admin/CustomerDetailModal';
 
 const CustomerManager = () => {
-  // Dữ liệu giả
   const [customers, setCustomers] = useState([
     { 
         id: 1, name: "Nguyễn Văn A", email: "nguyenvana@gmail.com", phone: "0901234567", 
@@ -27,24 +26,20 @@ const CustomerManager = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // Mở modal
   const handleViewCustomer = (customer) => {
     setSelectedCustomer(customer);
     setShowModal(true);
   };
 
-  // Xử lý Khóa / Mở khóa
   const handleToggleStatus = (id, newStatus) => {
     if(window.confirm(`Bạn có chắc muốn ${newStatus === 'Locked' ? 'KHÓA' : 'MỞ KHÓA'} tài khoản này?`)) {
         setCustomers(customers.map(c => c.id === id ? { ...c, status: newStatus } : c));
-        // Cập nhật luôn cho modal đang mở (nếu có)
         if (selectedCustomer && selectedCustomer.id === id) {
             setSelectedCustomer({ ...selectedCustomer, status: newStatus });
         }
     }
   };
 
-  // Logic tìm kiếm
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,12 +120,8 @@ const CustomerManager = () => {
                 </tbody>
             </Table>
         </Card.Body>
-         <Card.Footer className="bg-white py-3 text-end">
-             <small className="text-muted">Hiển thị {filteredCustomers.length} khách hàng</small>
-        </Card.Footer>
       </Card>
 
-      {/* Modal Chi Tiết */}
       <CustomerDetailModal 
         show={showModal} 
         handleClose={() => setShowModal(false)}

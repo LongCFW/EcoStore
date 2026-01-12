@@ -3,7 +3,7 @@ import { Nav } from 'react-bootstrap';
 import { NavLink, Link } from 'react-router-dom';
 import { 
     FaTachometerAlt, FaBox, FaShoppingBag, FaUsers, 
-    FaChartBar, FaSignOutAlt, FaCogs 
+    FaChartBar, FaSignOutAlt, FaCogs , FaShieldAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext'; // Import hook lấy user
 
@@ -18,6 +18,7 @@ const AdminSidebar = () => {
     { path: '/admin/customers', label: 'Khách hàng', icon: <FaUsers />, roles: ['admin', 'manager'] },
     { path: '/admin/stats', label: 'Thống kê', icon: <FaChartBar />, roles: ['admin'] },
     { path: '/admin/settings', label: 'Cấu hình', icon: <FaCogs />, roles: ['admin'] },
+    { path: '/admin/logs', label: 'Nhật ký hệ thống', icon: <FaShieldAlt />, roles: ['admin'] }
   ];
 
   return (
