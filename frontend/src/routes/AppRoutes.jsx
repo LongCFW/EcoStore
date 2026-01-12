@@ -18,6 +18,7 @@ import OffersPage from '../pages/client/OffersPage';
 import AdminLayout from '../layouts/AdminLayout'; 
 import DashboardPage from '../pages/admin/DashboardPage';
 
+import ProtectedRoute from './ProtectedRoute';
 const AppRoutes = () => {
   return (
     <Routes>
@@ -39,10 +40,32 @@ const AppRoutes = () => {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
 
-      {/* ADMIN ROUTES - Khu vực mới */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<DashboardPage />} />
-        {/* Sẽ thêm /admin/products, /admin/orders sau */}
+      {/* ADMIN ROUTES - PHÂN QUYỀN Ở ĐÂY */}
+      
+      {/* 1. Dashboard: Ai là nhân viên trở lên đều vào được Layout Admin */}
+      <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            
+            {/* Dashboard: Staff xem được (hoặc chặn nếu muốn) */}
+            <Route index element={<DashboardPage />} />
+            
+            {/* 2. Quản lý Sản phẩm: Chỉ Admin và Manager */}
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
+               {/* <Route path="products" element={<ProductManager />} /> */} 
+               {/* Tạm thời chưa có file ProductManager nên tôi comment lại */}
+            </Route>
+
+            {/* 3. Quản lý Đơn hàng: Cả 3 đều được vào */}
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
+               {/* <Route path="orders" element={<OrderManager />} /> */}
+            </Route>
+
+             {/* 4. Cấu hình/Thống kê sâu: Chỉ Admin */}
+             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+               {/* <Route path="settings" element={<SettingsPage />} /> */}
+            </Route>
+
+          </Route>
       </Route>
 
     </Routes>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -21,10 +22,38 @@ const LoginPage = () => {
     navigate('/'); 
   };
 
+  const { login } = useAuth(); // Lấy hàm login từ context
+
+  const handleLogin = (role) => {
+    // Gọi hàm login giả lập với role mong muốn
+    login(role);
+    // Điều hướng dựa trên role
+    if (role === 'admin' || role === 'manager' || role === 'staff') {
+        navigate('/admin');
+    } else {
+        navigate('/');
+    }
+  };
+
   return (
     <>
-      <h3 className="fw-bold mb-3 text-center">Đăng Nhập</h3>
-      <p className="text-muted text-center mb-4">Chào mừng bạn quay trở lại!</p>
+     <h3 className="fw-bold mb-3 text-center">Đăng Nhập (Demo)</h3>
+      <p className="text-muted text-center mb-4">Chọn quyền để test hệ thống phân quyền</p>
+
+      <div className="d-grid gap-2 mb-3">
+          <Button variant="danger" onClick={() => handleLogin('admin')}>
+             Đăng nhập quyền ADMIN (Full)
+          </Button>
+          <Button variant="warning" onClick={() => handleLogin('manager')}>
+             Đăng nhập quyền MANAGER (No Settings)
+          </Button>
+          <Button variant="info" onClick={() => handleLogin('staff')}>
+             Đăng nhập quyền STAFF (Orders Only)
+          </Button>
+          <Button variant="success" onClick={() => handleLogin('customer')}>
+             Đăng nhập Khách hàng (Về trang chủ)
+          </Button>
+      </div>
 
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="email">
