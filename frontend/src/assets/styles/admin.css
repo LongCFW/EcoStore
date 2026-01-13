@@ -393,3 +393,133 @@
 [data-theme="dark"] .recharts-text {
     fill: #a0a0a0 !important;
 }
+
+/* Thêm vào cuối admin.css nếu chưa có */
+.eco-modal .modal-content {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+.hover-scale:hover {
+    transform: scale(1.1);
+    background-color: white;
+}
+
+/* --- 1. FIX HEADER DROPDOWN --- */
+.admin-header {
+    z-index: 1050 !important; 
+    position: sticky;
+    top: 0;
+}
+
+/* Đẩy Dropdown xuống và căn phải */
+.admin-header .dropdown-menu {
+    z-index: 1060 !important;
+    margin-top: 15px !important; 
+    right: 0 !important;
+    left: auto !important;
+    min-width: 220px; /* Độ rộng tối thiểu */
+}
+
+/* --- 2. FIX AVATAR TRÒN 100% --- */
+/* Dùng !important để ghi đè mọi CSS của Bootstrap */
+.header-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important; /* Chống co giãn */
+    min-height: 40px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    aspect-ratio: 1/1 !important; /* Ép tỉ lệ 1:1 */
+    border: 2px solid var(--eco-primary);
+    padding: 1px;
+    background: white;
+}
+
+.admin-avatar {
+    width: 140px !important;
+    height: 140px !important;
+    min-width: 140px;
+    min-height: 140px;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    aspect-ratio: 1/1 !important;
+    border: 5px solid var(--admin-card-bg);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: block;
+    margin: 0 auto;
+}
+
+/* Wrapper để căn giữa */
+.admin-avatar-wrapper {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto -75px; /* Đẩy xuống */
+    position: relative;
+    z-index: 2;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--eco-primary), #a5d6a7);
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- 3. RESPONSIVE DASHBOARD --- */
+@media (max-width: 768px) {
+    /* Stack cột biểu đồ */
+    .chart-container {
+        margin-bottom: 20px;
+        padding: 15px;
+    }
+    
+    /* Table scroll ngang */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    /* KPI Cards nhỏ lại chút */
+    .stat-card {
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    
+    /* Ẩn bớt thông tin thừa trên mobile */
+    .header-search {
+        display: none !important;
+    }
+    
+    .admin-content {
+        padding: 15px; /* Giảm padding cho đỡ chật */
+    }
+}
+
+/* --- RESPONSIVE DASHBOARD & MODAL --- */
+@media (max-width: 768px) {
+    /* Dashboard */
+    .stat-card {
+        margin-bottom: 15px; /* Khoảng cách giữa các thẻ thống kê */
+    }
+    
+    .chart-container {
+        margin-bottom: 20px;
+        height: auto !important; /* Chiều cao tự động */
+        min-height: 300px;
+    }
+    
+    .recharts-wrapper {
+        width: 100% !important; /* Chart full width */
+    }
+
+    /* Modal Sản Phẩm */
+    .eco-modal .modal-body {
+        padding: 20px !important;
+    }
+    
+    /* Table trong Dashboard */
+    .table-card .table-responsive {
+        overflow-x: auto; /* Scroll ngang nếu bảng dài */
+    }
+}
