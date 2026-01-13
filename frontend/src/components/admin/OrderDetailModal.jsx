@@ -1,120 +1,142 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Button, Table, Row, Col, Badge, Form } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Modal, Button, Row, Col, Table, Badge, Form } from 'react-bootstrap';
+import { FaPrint, FaSave, FaTimes, FaUser, FaMapMarkerAlt, FaPhone, FaBox } from 'react-icons/fa';
 
-const OrderDetailModal = ({ show, handleClose, order, handleUpdateStatus }) => {
-  const [status, setStatus] = useState('');
+const OrderDetailModal = ({ show, handleClose, order, onUpdateStatus }) => {
+  const [status, setStatus] = useState(order?.status || 'pending');
 
-  // FIX LỖI: Chỉ cập nhật state khi có order và modal đang mở
-  useEffect(() => {
-    if (order && show) {
-      setStatus(order.status);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order, show]);
+  // Helper: Màu sắc trạng thái
+  const getStatusColor = (st) => {
+      switch(st) {
+          case 'completed': return 'success';
+          case 'shipping': return 'primary';
+          case 'pending': return 'warning';
+          case 'cancelled': return 'danger';
+          default: return 'secondary';
+      }
+  };
 
-  const onSaveStatus = () => {
-    handleUpdateStatus(order.id, status);
-    handleClose();
+  const handleSave = () => {
+      onUpdateStatus(order.id, status);
+      handleClose();
   };
 
   if (!order) return null;
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Chi tiết đơn hàng #{order.id}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {/* Thông tin chung */}
-        <div className="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
-            <div>
-                <strong>Ngày đặt:</strong> {order.date}
-            </div>
-            <div>
-                <strong>Trạng thái: </strong>
-                {status === 'Pending' && <Badge bg="warning" text="dark">Chờ xử lý</Badge>}
-                {status === 'Shipping' && <Badge bg="primary">Đang giao hàng</Badge>}
-                {status === 'Completed' && <Badge bg="success">Hoàn thành</Badge>}
-                {status === 'Cancelled' && <Badge bg="danger">Đã hủy</Badge>}
-            </div>
+    <Modal show={show} onHide={handleClose} size="lg" centered className="eco-modal" backdrop="static">
+      {/* HEADER: Mã đơn & Trạng thái hiện tại */}
+      <Modal.Header className="border-0 bg-light align-items-center">
+        <div>
+            <h5 className="fw-bold text-success mb-1">Chi Tiết Đơn Hàng #{order.id}</h5>
+            <small className="text-muted">Ngày đặt: {order.date}</small>
         </div>
+        <div className="d-flex align-items-center gap-3">
+            <Badge bg={getStatusColor(order.status)} className="px-3 py-2 rounded-pill text-uppercase">
+                {order.statusLabel}
+            </Badge>
+            <button className="icon-btn border-0" onClick={handleClose}><FaTimes/></button>
+        </div>
+      </Modal.Header>
 
-        <Row className="mb-4">
-            {/* Cột trái: Thông tin khách hàng */}
+      <Modal.Body className="p-4 custom-scrollbar">
+        {/* 1. THÔNG TIN KHÁCH HÀNG & GIAO HÀNG */}
+        <Row className="g-4 mb-4">
             <Col md={6}>
-                <h6 className="fw-bold border-bottom pb-2">Thông tin khách hàng</h6>
-                <p className="mb-1"><strong>Tên:</strong> {order.customer}</p>
-                <p className="mb-1"><strong>SĐT:</strong> {order.phone}</p>
-                <p className="mb-1"><strong>Email:</strong> {order.email}</p>
-                <p className="mb-0"><strong>Địa chỉ:</strong> {order.address}</p>
+                <div className="p-3 rounded-3 border h-100 bg-white">
+                    <h6 className="fw-bold text-muted mb-3 text-uppercase small"><FaUser className="me-2"/>Thông tin khách hàng</h6>
+                    <p className="fw-bold mb-1">{order.customer}</p>
+                    <p className="mb-1 text-muted small"><FaPhone className="me-2"/>{order.phone}</p>
+                    <p className="mb-0 text-muted small">Email: {order.email}</p>
+                </div>
             </Col>
-
-             {/* Cột phải: Thông tin thanh toán */}
-             <Col md={6}>
-                <h6 className="fw-bold border-bottom pb-2">Thanh toán & Vận chuyển</h6>
-                <p className="mb-1"><strong>Phương thức:</strong> {order.paymentMethod}</p>
-                <p className="mb-1"><strong>Phí vận chuyển:</strong> {order.shippingFee.toLocaleString()} đ</p>
-                <p className="mb-0"><strong>Ghi chú:</strong> {order.note || 'Không có'}</p>
+            <Col md={6}>
+                <div className="p-3 rounded-3 border h-100 bg-white">
+                    <h6 className="fw-bold text-muted mb-3 text-uppercase small"><FaMapMarkerAlt className="me-2"/>Địa chỉ giao hàng</h6>
+                    <p className="mb-2 text-muted small">{order.address}</p>
+                    <div className="mt-auto">
+                        <span className="badge bg-light text-dark border">Thanh toán: {order.paymentMethod}</span>
+                    </div>
+                </div>
             </Col>
         </Row>
 
-        {/* Bảng sản phẩm */}
-        <h6 className="fw-bold border-bottom pb-2 mb-3">Sản phẩm đã đặt</h6>
-        <Table responsive bordered className="align-middle">
-            <thead className="bg-light">
-                <tr>
-                    <th>Sản phẩm</th>
-                    <th className="text-center">Số lượng</th>
-                    <th className="text-end">Đơn giá</th>
-                    <th className="text-end">Thành tiền</th>
-                </tr>
-            </thead>
-            <tbody>
-                {order.items.map((item, idx) => (
-                    <tr key={idx}>
-                        <td>
-                            <div className="d-flex align-items-center gap-2">
-                                <img src={item.image} alt="" style={{width: 40, height: 40, objectFit: 'cover'}} className="rounded"/>
-                                <span>{item.name}</span>
-                            </div>
-                        </td>
-                        <td className="text-center">{item.quantity}</td>
-                        <td className="text-end">{item.price.toLocaleString()} đ</td>
-                        <td className="text-end fw-bold">{(item.price * item.quantity).toLocaleString()} đ</td>
+        {/* 2. DANH SÁCH SẢN PHẨM */}
+        <div className="border rounded-3 overflow-hidden mb-4">
+            <Table hover responsive className="mb-0 custom-table align-middle">
+                <thead className="bg-light">
+                    <tr>
+                        <th className="ps-3">Sản phẩm</th>
+                        <th className="text-center">Số lượng</th>
+                        <th className="text-end">Đơn giá</th>
+                        <th className="text-end pe-3">Thành tiền</th>
                     </tr>
-                ))}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colSpan="3" className="text-end fw-bold">Tổng cộng (đã gồm ship)</td>
-                    <td className="text-end fw-bold text-danger fs-5">{order.total.toLocaleString()} đ</td>
-                </tr>
-            </tfoot>
-        </Table>
-
-        {/* Khu vực xử lý đơn hàng */}
-        <div className="mt-4 p-3 border rounded border-warning bg-warning bg-opacity-10">
-            <h6 className="fw-bold mb-3">Xử lý đơn hàng</h6>
-            <div className="d-flex gap-3 align-items-center">
-                <Form.Select 
-                    value={status} 
-                    onChange={(e) => setStatus(e.target.value)} 
-                    style={{maxWidth: '300px'}}
-                >
-                    <option value="Pending">Chờ xử lý (Pending)</option>
-                    <option value="Shipping">Đang giao hàng (Shipping)</option>
-                    <option value="Completed">Hoàn thành (Completed)</option>
-                    <option value="Cancelled">Hủy đơn (Cancelled)</option>
-                </Form.Select>
-                <Button variant="success" onClick={onSaveStatus} disabled={status === order.status}>
-                    Cập nhật trạng thái
-                </Button>
-            </div>
+                </thead>
+                <tbody>
+                    {order.items?.map((item, idx) => (
+                        <tr key={idx}>
+                            <td className="ps-3">
+                                <div className="d-flex align-items-center gap-2">
+                                    <div className="bg-light rounded p-1 border">
+                                        <FaBox className="text-success"/>
+                                    </div>
+                                    <span className="fw-medium">{item.name}</span>
+                                </div>
+                            </td>
+                            <td className="text-center">x{item.quantity}</td>
+                            <td className="text-end text-muted">{item.price.toLocaleString()} đ</td>
+                            <td className="text-end fw-bold pe-3">{(item.price * item.quantity).toLocaleString()} đ</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </Table>
         </div>
 
+        {/* 3. TỔNG KẾT & CẬP NHẬT TRẠNG THÁI */}
+        <Row className="align-items-end">
+            <Col md={6}>
+                <Form.Group>
+                    <Form.Label className="fw-bold small text-muted">CẬP NHẬT TRẠNG THÁI</Form.Label>
+                    <Form.Select 
+                        value={status} 
+                        onChange={(e) => setStatus(e.target.value)}
+                        className="admin-input"
+                    >
+                        <option value="pending">Chờ xử lý</option>
+                        <option value="shipping">Đang vận chuyển</option>
+                        <option value="completed">Đã giao hàng (Hoàn thành)</option>
+                        <option value="cancelled">Đã hủy</option>
+                    </Form.Select>
+                </Form.Group>
+            </Col>
+            <Col md={6}>
+                <div className="bg-light p-3 rounded-3">
+                    <div className="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Tạm tính:</span>
+                        <span>{order.subtotal?.toLocaleString()} đ</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Phí vận chuyển:</span>
+                        <span>{order.shippingFee?.toLocaleString()} đ</span>
+                    </div>
+                    <div className="d-flex justify-content-between border-top border-secondary border-opacity-10 pt-2">
+                        <span className="fw-bold text-success fs-5">Tổng cộng:</span>
+                        <span className="fw-bold text-success fs-5">{order.total?.toLocaleString()} đ</span>
+                    </div>
+                </div>
+            </Col>
+        </Row>
       </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>Đóng</Button>
+
+      <Modal.Footer className="border-0 pt-0 pe-4 pb-4">
+        <Button variant="light" className="rounded-pill px-3" onClick={() => alert("Tính năng in đang phát triển")}>
+            <FaPrint className="me-2"/> In hóa đơn
+        </Button>
+        <div className="flex-grow-1"></div>
+        <Button variant="light" onClick={handleClose} className="rounded-pill px-4">Đóng</Button>
+        <Button variant="success" onClick={handleSave} className="rounded-pill px-4 fw-bold shadow-sm">
+            <FaSave className="me-2"/> Lưu thay đổi
+        </Button>
       </Modal.Footer>
     </Modal>
   );
