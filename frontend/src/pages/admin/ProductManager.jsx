@@ -1,24 +1,39 @@
 import React, { useState } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, Badge, Dropdown } from 'react-bootstrap';
-import { FaSearch, FaPlus, FaEdit, FaTrash, FaFilter, FaEllipsisV, FaBox } from 'react-icons/fa';
+import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination } from 'react-bootstrap';
+import { FaSearch, FaPlus, FaEdit, FaTrash, FaFilter, FaBox } from 'react-icons/fa';
 import ProductModal from '../../components/admin/ProductModal';
 import '../../assets/styles/admin.css';
 
 const ProductManager = () => {
-  // Mock Data
-  const initialProducts = [
-    { id: 1, name: "Bàn chải tre Eco", category: "Đồ gia dụng", price: 50000, salePrice: 45000, stock: 150, image: "https://images.unsplash.com/photo-1607613009820-a29f7bb6dc2d?auto=format&fit=crop&w=100&q=80", status: 'active' },
-    { id: 2, name: "Cà chua bi hữu cơ", category: "Rau củ", price: 35000, salePrice: null, stock: 20, image: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&w=100&q=80", status: 'active' },
-    { id: 3, name: "Túi vải Canvas", category: "Thời trang", price: 120000, salePrice: 99000, stock: 0, image: "https://images.unsplash.com/photo-1597484661643-2f5fef640dd1?auto=format&fit=crop&w=100&q=80", status: 'out_stock' },
-    { id: 4, name: "Xà phòng thảo mộc", category: "Mỹ phẩm", price: 80000, salePrice: null, stock: 50, image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?auto=format&fit=crop&w=100&q=80", status: 'active' },
-    { id: 5, name: "Hạt Granola", category: "Hạt & Ngũ cốc", price: 210000, salePrice: 190000, stock: 30, image: "https://images.unsplash.com/photo-1517093750596-3536342d2242?auto=format&fit=crop&w=100&q=80", status: 'active' },
-  ];
+  // 1. GENERATE MOCK DATA (25 SẢN PHẨM)
+  const [products, setProducts] = useState(() => {
+      const data = [];
+      const categories = ["Rau củ", "Trái cây", "Đồ gia dụng", "Thời trang", "Mỹ phẩm"];
+      const names = ["Bàn chải tre", "Cà chua bi", "Túi vải Canvas", "Xà phòng", "Hạt Granola"];
+      
+      for (let i = 1; i <= 25; i++) {
+          data.push({
+              id: i,
+              name: `${names[i % 5]} Eco ${i}`,
+              category: categories[i % 5],
+              price: 50000 + (i * 1000),
+              salePrice: i % 3 === 0 ? 45000 + (i * 1000) : null,
+              stock: i % 4 === 0 ? 0 : 20 + i,
+              image: `https://via.placeholder.com/150?text=Product+${i}`, // Hoặc link ảnh thật
+              status: i % 4 === 0 ? 'out_stock' : 'active'
+          });
+      }
+      return data;
+  });
 
-  const [products, setProducts] = useState(initialProducts);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // --- LOGIC XỬ LÝ ---
   const handleEdit = (product) => {
@@ -34,10 +49,8 @@ const ProductManager = () => {
 
   const handleSave = (formData) => {
     if (editingProduct) {
-      // Update
       setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...formData } : p));
     } else {
-      // Add new (Fake ID)
       const newProduct = { ...formData, id: Date.now(), status: 'active', image: formData.preview };
       setProducts([newProduct, ...products]);
     }
@@ -49,27 +62,44 @@ const ProductManager = () => {
       setShowModal(true);
   }
 
-  // Filter Logic
+  // --- FILTER & PAGINATION ---
   const filteredProducts = products.filter(item => {
       const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = filterCategory === 'All' || item.category === filterCategory;
       return matchSearch && matchCategory;
   });
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleSearchChange = (e) => {
+      setSearchTerm(e.target.value);
+      setCurrentPage(1);
+  };
+
+  const handleFilterChange = (e) => {
+      setFilterCategory(e.target.value);
+      setCurrentPage(1);
+  };
+
   return (
     <div className="animate-fade-in">
-      {/* 1. HEADER & TOOLBAR */}
+      {/* HEADER */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
         <div>
             <h2 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Quản Lý Sản Phẩm</h2>
-            <p className="text-muted small m-0">Tổng số: {products.length} sản phẩm</p>
+            <p className="text-muted small m-0">Tổng số: {filteredProducts.length} sản phẩm</p>
         </div>
         <Button variant="success" className="rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleAddNew}>
             <FaPlus /> Thêm mới
         </Button>
       </div>
 
-      {/* 2. FILTER BAR */}
+      {/* FILTER */}
       <div className="table-card p-3 mb-4">
           <Row className="g-3 align-items-center">
               <Col md={4}>
@@ -80,7 +110,7 @@ const ProductManager = () => {
                         placeholder="Tìm kiếm tên sản phẩm..." 
                         className="border-start-0 shadow-none"
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={handleSearchChange}
                       />
                   </InputGroup>
               </Col>
@@ -88,7 +118,7 @@ const ProductManager = () => {
                   <Form.Select 
                     className="shadow-none" 
                     value={filterCategory}
-                    onChange={e => setFilterCategory(e.target.value)}
+                    onChange={handleFilterChange}
                   >
                       <option value="All">Tất cả danh mục</option>
                       <option value="Rau củ">Rau củ</option>
@@ -105,7 +135,7 @@ const ProductManager = () => {
           </Row>
       </div>
 
-      {/* 3. PRODUCT TABLE */}
+      {/* TABLE */}
       <div className="table-card overflow-hidden">
           <Table hover responsive className="custom-table align-middle mb-0">
               <thead>
@@ -119,8 +149,8 @@ const ProductManager = () => {
                   </tr>
               </thead>
               <tbody>
-                  {filteredProducts.length > 0 ? (
-                      filteredProducts.map((item) => (
+                  {currentItems.length > 0 ? (
+                      currentItems.map((item) => (
                         <tr key={item.id}>
                             <td className="ps-4">
                                 <div className="d-flex align-items-center gap-3">
@@ -174,17 +204,34 @@ const ProductManager = () => {
               </tbody>
           </Table>
           
-          {/* Pagination (Visual Only) */}
-          <div className="p-3 border-top d-flex justify-content-between align-items-center">
-              <small className="text-muted">Hiển thị {filteredProducts.length} trên tổng số {products.length}</small>
-              <div className="d-flex gap-1">
-                  <Button variant="outline-secondary" size="sm" disabled>Trước</Button>
-                  <Button variant="success" size="sm">1</Button>
-                  <Button variant="outline-secondary" size="sm">2</Button>
-                  <Button variant="outline-secondary" size="sm">3</Button>
-                  <Button variant="outline-secondary" size="sm">Sau</Button>
+          {/* PAGINATION */}
+          {totalPages > 1 && (
+              <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
+                  <Pagination className="eco-pagination mb-2">
+                      <Pagination.Prev 
+                        onClick={() => handlePageChange(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                      />
+                      {[...Array(totalPages)].map((_, idx) => (
+                          <Pagination.Item 
+                            key={idx + 1} 
+                            active={idx + 1 === currentPage}
+                            onClick={() => handlePageChange(idx + 1)}
+                          >
+                              {idx + 1}
+                          </Pagination.Item>
+                      ))}
+                      <Pagination.Next 
+                        onClick={() => handlePageChange(currentPage + 1)} 
+                        disabled={currentPage === totalPages}
+                      />
+                  </Pagination>
+                  
+                  <small className="text-muted">
+                      Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredProducts.length)} trên tổng số {filteredProducts.length} sản phẩm
+                  </small>
               </div>
-          </div>
+          )}
       </div>
 
       {/* MODAL */}

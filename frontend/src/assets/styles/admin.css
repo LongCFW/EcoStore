@@ -523,3 +523,63 @@
         overflow-x: auto; /* Scroll ngang nếu bảng dài */
     }
 }
+
+/* --- UNIVERSAL ECO PAGINATION --- */
+.eco-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px; /* Khoảng cách giữa các nút */
+    margin-top: 20px;
+}
+
+/* Base style cho nút trang */
+.eco-pagination .page-link, 
+.eco-pagination .page-item .page-link {
+    border: none;
+    border-radius: 50% !important; /* Tròn vo */
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--admin-text-muted);
+    font-weight: 600;
+    background-color: var(--admin-card-bg);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.2s ease-in-out;
+    margin: 0;
+}
+
+/* Hover Effect */
+.eco-pagination .page-link:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--eco-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Active State (Trang hiện tại) */
+.eco-pagination .page-item.active .page-link {
+    background: var(--sidebar-bg) !important; /* Dùng gradient của sidebar */
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    transform: scale(1.1);
+}
+
+/* Disabled State */
+.eco-pagination .page-item.disabled .page-link {
+    background-color: transparent;
+    color: #ccc;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Nút Trước/Sau (Hình viên thuốc dài hơn chút nếu muốn, ở đây tôi để tròn cho đồng bộ) */
+.eco-pagination .page-link span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+

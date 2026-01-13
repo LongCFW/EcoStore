@@ -1,127 +1,244 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Badge, Form, InputGroup } from 'react-bootstrap';
-import { FaSearch, FaEye, FaUnlock, FaLock } from 'react-icons/fa';
+import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination } from 'react-bootstrap';
+import { FaSearch, FaFilter, FaEye, FaUnlock, FaLock, FaDownload, FaUsers } from 'react-icons/fa';
 import CustomerDetailModal from '../../components/admin/CustomerDetailModal';
+import '../../assets/styles/admin.css';
 
 const CustomerManager = () => {
-  const [customers, setCustomers] = useState([
-    { 
-        id: 1, name: "Nguyễn Văn A", email: "nguyenvana@gmail.com", phone: "0901234567", 
-        avatar: "https://via.placeholder.com/150", address: "123 Lê Lợi, Q1, TP.HCM", 
-        joinDate: "20/01/2024", status: "Active", totalOrders: 15 
-    },
-    { 
-        id: 2, name: "Trần Thị B", email: "tranthib@gmail.com", phone: "0909888777", 
-        avatar: "https://via.placeholder.com/150", address: "456 Nguyễn Huệ, Q1, TP.HCM", 
-        joinDate: "15/05/2024", status: "Active", totalOrders: 3 
-    },
-    { 
-        id: 3, name: "Lê Văn C (Bom hàng)", email: "levanc@gmail.com", phone: "0912345678", 
-        avatar: "https://via.placeholder.com/150", address: "789 CMT8, Q3, TP.HCM", 
-        joinDate: "10/11/2024", status: "Locked", totalOrders: 0 
-    },
-  ]);
+  // 1. KHỞI TẠO DATA TRỰC TIẾP (KHÔNG DÙNG USEEFFECT, KHÔNG DÙNG MATH.RANDOM)
+  // Dùng hàm callback trong useState để chỉ chạy 1 lần khi load trang
+  const [customers, setCustomers] = useState(() => {
+      const data = [];
+      const firstNames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng"];
+      const lastNames = ["Văn A", "Thị B", "Văn C", "Thị D", "Minh E", "Ngọc F", "Quang G", "Thu H"];
+      
+      for (let i = 1; i <= 25; i++) {
+          // Dùng toán tử % để lấy dữ liệu xoay vòng -> Luôn cố định, không bao giờ lỗi impure
+          const firstName = firstNames[i % firstNames.length];
+          const lastName = lastNames[i % lastNames.length];
+          const roleType = i % 3 === 0 ? 'Thành viên Vàng' : 'Thành viên Bạc';
+          const statusType = i % 5 === 0 ? 'Locked' : 'Active';
+          
+          data.push({
+              id: `CUS-${1000 + i}`,
+              name: `${firstName} ${lastName}`,
+              email: `customer${i}@ecostore.com`,
+              phone: `090${1000000 + i}`, // Số điện thoại giả định tăng dần
+              avatar: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
+              address: `Số ${i}, Đường Nguyễn Huệ, TP.HCM`,
+              joinDate: '20/01/2024',
+              status: statusType,
+              totalOrders: (i * 2) + 5,
+              totalSpent: ((i * 0.5) + 1).toFixed(1),
+              role: roleType
+          });
+      }
+      return data;
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
+  
+  // State Modal
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
+  // State Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // --- LOGIC HÀNH ĐỘNG ---
   const handleViewCustomer = (customer) => {
     setSelectedCustomer(customer);
     setShowModal(true);
   };
 
   const handleToggleStatus = (id, newStatus) => {
-    if(window.confirm(`Bạn có chắc muốn ${newStatus === 'Locked' ? 'KHÓA' : 'MỞ KHÓA'} tài khoản này?`)) {
+    if(window.confirm(`Xác nhận ${newStatus === 'Locked' ? 'KHÓA' : 'MỞ KHÓA'} tài khoản này?`)) {
         setCustomers(customers.map(c => c.id === id ? { ...c, status: newStatus } : c));
         if (selectedCustomer && selectedCustomer.id === id) {
-            setSelectedCustomer({ ...selectedCustomer, status: newStatus });
+            setSelectedCustomer(prev => ({ ...prev, status: newStatus }));
         }
     }
   };
 
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone.includes(searchTerm)
-  );
+  // --- LOGIC LỌC & PHÂN TRANG ---
+  const filteredCustomers = customers.filter(c => {
+    const term = searchTerm.toLowerCase();
+    const matchSearch = c.name.toLowerCase().includes(term) || 
+                        c.email.toLowerCase().includes(term) ||
+                        c.phone.includes(term);
+    const matchStatus = filterStatus === 'All' || c.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (pageNumber) => {
+      setCurrentPage(pageNumber);
+  };
+
+  const handleSearchChange = (e) => {
+      setSearchTerm(e.target.value);
+      setCurrentPage(1);
+  };
+
+  const handleFilterChange = (e) => {
+      setFilterStatus(e.target.value);
+      setCurrentPage(1);
+  };
 
   return (
-    <div>
-      <h2 className="fw-bold mb-4">Quản lý Khách hàng</h2>
+    <div className="animate-fade-in">
+      {/* 1. HEADER & TOOLBAR */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Quản Lý Khách Hàng</h2>
+            <p className="text-muted small m-0"><FaUsers className="me-1"/>Tổng số: {filteredCustomers.length} khách hàng</p>
+        </div>
+        <Button variant="outline-success" className="rounded-pill px-4 fw-bold d-flex align-items-center gap-2">
+            <FaDownload /> Xuất danh sách
+        </Button>
+      </div>
 
-      <Card className="border-0 shadow-sm">
-        <Card.Header className="bg-white py-3">
-            <InputGroup style={{ maxWidth: '400px' }}>
-                <InputGroup.Text className="bg-white"><FaSearch className="text-muted"/></InputGroup.Text>
-                <Form.Control 
-                    placeholder="Tìm kiếm theo tên, email hoặc SĐT..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </InputGroup>
-        </Card.Header>
-        <Card.Body className="p-0">
-            <Table responsive hover className="mb-0 align-middle">
-                <thead className="bg-light text-secondary">
-                    <tr>
-                        <th className="ps-4">Khách hàng</th>
-                        <th>Liên hệ</th>
-                        <th>Ngày tham gia</th>
-                        <th className="text-center">Đơn hàng</th>
-                        <th>Trạng thái</th>
-                        <th className="text-end pe-4">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredCustomers.length > 0 ? filteredCustomers.map(cust => (
+      {/* 2. FILTER BAR */}
+      <div className="table-card p-3 mb-4">
+          <Row className="g-3">
+              <Col md={5}>
+                  <InputGroup>
+                      <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
+                      <Form.Control 
+                        type="text" 
+                        placeholder="Tìm kiếm theo tên, email hoặc SĐT..." 
+                        className="border-start-0 shadow-none"
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                      />
+                  </InputGroup>
+              </Col>
+              <Col md={3}>
+                  <Form.Select 
+                    className="shadow-none" 
+                    value={filterStatus} 
+                    onChange={handleFilterChange}
+                  >
+                      <option value="All">Tất cả trạng thái</option>
+                      <option value="Active">Đang hoạt động</option>
+                      <option value="Locked">Bị khóa</option>
+                  </Form.Select>
+              </Col>
+              <Col md={2}>
+                  <Button variant="outline-secondary" className="w-100 d-flex align-items-center justify-content-center gap-2">
+                      <FaFilter /> Lọc nhóm
+                  </Button>
+              </Col>
+          </Row>
+      </div>
+
+      {/* 3. CUSTOMER TABLE */}
+      <div className="table-card overflow-hidden">
+          <Table hover responsive className="custom-table align-middle mb-0">
+              <thead>
+                  <tr>
+                      <th className="ps-4">Khách Hàng</th>
+                      <th>Liên Hệ</th>
+                      <th>Ngày Tham Gia</th>
+                      <th className="text-center">Đơn Hàng</th>
+                      <th>Trạng Thái</th>
+                      <th className="text-end pe-4">Hành Động</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {currentItems.length > 0 ? (
+                      currentItems.map((cust) => (
                         <tr key={cust.id}>
                             <td className="ps-4">
                                 <div className="d-flex align-items-center gap-3">
-                                    <img src={cust.avatar} alt="" className="rounded-circle" style={{width: 40, height: 40}} />
+                                    <img 
+                                        src={cust.avatar} 
+                                        alt={cust.name} 
+                                        className="rounded-circle border object-fit-cover" 
+                                        style={{width: 45, height: 45}}
+                                    />
                                     <div>
-                                        <div className="fw-bold">{cust.name}</div>
-                                        <div className="text-muted small">{cust.id}</div>
+                                        <div className="fw-bold" style={{color: 'var(--admin-text)'}}>{cust.name}</div>
+                                        <small className="text-muted">{cust.id}</small>
                                     </div>
                                 </div>
                             </td>
                             <td>
                                 <div>{cust.email}</div>
-                                <div className="text-muted small">{cust.phone}</div>
+                                <small className="text-muted">{cust.phone}</small>
                             </td>
                             <td>{cust.joinDate}</td>
                             <td className="text-center fw-bold">{cust.totalOrders}</td>
                             <td>
-                                {cust.status === 'Active' 
-                                    ? <Badge bg="success">Hoạt động</Badge> 
-                                    : <Badge bg="danger">Đã khóa</Badge>
-                                }
+                                {cust.status === 'Active' ? (
+                                    <Badge bg="success" className="rounded-pill px-3 bg-opacity-75">Active</Badge>
+                                ) : (
+                                    <Badge bg="danger" className="rounded-pill px-3 bg-opacity-75">Locked</Badge>
+                                )}
                             </td>
                             <td className="text-end pe-4">
-                                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleViewCustomer(cust)}>
-                                    <FaEye />
+                                <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-primary hover-scale me-2" onClick={() => handleViewCustomer(cust)}>
+                                    <FaEye className="me-1"/> Xem
                                 </Button>
                                 {cust.status === 'Active' ? (
-                                    <Button variant="outline-danger" size="sm" title="Khóa tài khoản" onClick={() => handleToggleStatus(cust.id, 'Locked')}>
-                                        <FaLock />
+                                    <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-danger hover-scale" onClick={() => handleToggleStatus(cust.id, 'Locked')} title="Khóa">
+                                        <FaLock/>
                                     </Button>
                                 ) : (
-                                    <Button variant="outline-success" size="sm" title="Mở khóa" onClick={() => handleToggleStatus(cust.id, 'Active')}>
-                                        <FaUnlock />
+                                    <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-success hover-scale" onClick={() => handleToggleStatus(cust.id, 'Active')} title="Mở khóa">
+                                        <FaUnlock/>
                                     </Button>
                                 )}
                             </td>
                         </tr>
-                    )) : (
-                        <tr>
-                             <td colSpan="6" className="text-center py-4 text-muted">Không tìm thấy khách hàng nào.</td>
-                        </tr>
-                    )}
-                </tbody>
-            </Table>
-        </Card.Body>
-      </Card>
+                      ))
+                  ) : (
+                      <tr>
+                          <td colSpan="6" className="text-center py-5 text-muted">
+                              Không tìm thấy khách hàng nào phù hợp.
+                          </td>
+                      </tr>
+                  )}
+              </tbody>
+          </Table>
+          
+          {/* 4. PAGINATION */}
+          {totalPages > 1 && (
+              <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
+                  <Pagination className="eco-pagination mb-2">
+                      <Pagination.Prev 
+                        onClick={() => handlePageChange(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                      />
+                      {[...Array(totalPages)].map((_, idx) => (
+                          <Pagination.Item 
+                            key={idx + 1} 
+                            active={idx + 1 === currentPage}
+                            onClick={() => handlePageChange(idx + 1)}
+                          >
+                              {idx + 1}
+                          </Pagination.Item>
+                      ))}
+                      <Pagination.Next 
+                        onClick={() => handlePageChange(currentPage + 1)} 
+                        disabled={currentPage === totalPages}
+                      />
+                  </Pagination>
+                  
+                  <small className="text-muted">
+                      Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredCustomers.length)} trên tổng số {filteredCustomers.length} khách hàng
+                  </small>
+              </div>
+          )}
+      </div>
 
+      {/* MODAL */}
       <CustomerDetailModal 
         show={showModal} 
         handleClose={() => setShowModal(false)}

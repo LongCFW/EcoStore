@@ -1,45 +1,48 @@
 import React, { useState } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, Badge } from 'react-bootstrap';
+import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination } from 'react-bootstrap';
 import { FaSearch, FaFilter, FaEye, FaDownload, FaShoppingBag, FaCheckCircle, FaTruck, FaClock } from 'react-icons/fa';
 import OrderDetailModal from '../../components/admin/OrderDetailModal';
 import '../../assets/styles/admin.css';
 
 const OrderManager = () => {
-  // Mock Data
-  const initialOrders = [
-    { 
-        id: 'ORD-001', date: '20/01/2025', customer: 'Nguyễn Văn A', phone: '0901234567', email: 'a@gmail.com', address: '123 Lê Lợi, Q1, HCM', paymentMethod: 'COD',
-        status: 'pending', statusLabel: 'Chờ xử lý', 
-        items: [{name: 'Bàn chải tre', quantity: 2, price: 50000}, {name: 'Túi vải', quantity: 1, price: 120000}],
-        subtotal: 220000, shippingFee: 30000, total: 250000 
-    },
-    { 
-        id: 'ORD-002', date: '19/01/2025', customer: 'Trần Thị B', phone: '0909888777', email: 'b@gmail.com', address: '456 Nguyễn Huệ, Q1, HCM', paymentMethod: 'Banking',
-        status: 'shipping', statusLabel: 'Đang giao', 
-        items: [{name: 'Combo Rau củ', quantity: 1, price: 300000}],
-        subtotal: 300000, shippingFee: 0, total: 300000 
-    },
-    { 
-        id: 'ORD-003', date: '18/01/2025', customer: 'Lê Văn C', phone: '0912345678', email: 'c@gmail.com', address: '789 Võ Văn Kiệt, Q5, HCM', paymentMethod: 'Momo',
-        status: 'completed', statusLabel: 'Hoàn thành', 
-        items: [{name: 'Hạt Granola', quantity: 2, price: 210000}],
-        subtotal: 420000, shippingFee: 0, total: 420000 
-    },
-    { 
-        id: 'ORD-004', date: '15/01/2025', customer: 'Phạm Thị D', phone: '0933444555', email: 'd@gmail.com', address: '12 Hoàng Diệu, Q4, HCM', paymentMethod: 'COD',
-        status: 'cancelled', statusLabel: 'Đã hủy', 
-        items: [{name: 'Bình giữ nhiệt', quantity: 1, price: 150000}],
-        subtotal: 150000, shippingFee: 30000, total: 180000 
-    },
-  ];
+  // 1. GENERATE MOCK DATA (25 ĐƠN HÀNG)
+  // Dùng callback trong useState để chỉ chạy 1 lần
+  const [orders, setOrders] = useState(() => {
+      const data = [];
+      const customers = ["Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E"];
+      const statuses = ["pending", "shipping", "completed", "cancelled"];
+      
+      for (let i = 1; i <= 25; i++) {
+          const status = statuses[i % 4];
+          data.push({
+              id: `ORD-${1000 + i}`,
+              date: `20/01/2025`,
+              customer: customers[i % 5],
+              phone: `09012345${i < 10 ? '0' + i : i}`,
+              email: `customer${i}@ecostore.com`,
+              address: `Số ${i}, Đường ABC, TP.HCM`,
+              paymentMethod: i % 2 === 0 ? 'Banking' : 'COD',
+              status: status,
+              statusLabel: status === 'pending' ? 'Chờ xử lý' : status === 'shipping' ? 'Đang giao' : status === 'completed' ? 'Hoàn thành' : 'Đã hủy',
+              items: [{name: 'Sản phẩm mẫu', quantity: 1, price: 100000}],
+              subtotal: 100000,
+              shippingFee: 30000,
+              total: 130000 + (i * 10000) // Giá trị khác nhau chút
+          });
+      }
+      return data;
+  });
 
-  const [orders, setOrders] = useState(initialOrders);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   
-  // State cho Modal
+  // State Modal
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // --- LOGIC ---
   const handleView = (order) => {
@@ -62,21 +65,39 @@ const OrderManager = () => {
 
   const getStatusBadge = (status) => {
       switch(status) {
-          case 'completed': return <Badge bg="success" className="rounded-pill px-3">Hoàn thành</Badge>;
-          case 'shipping': return <Badge bg="primary" className="rounded-pill px-3">Vận chuyển</Badge>;
-          case 'pending': return <Badge bg="warning" text="dark" className="rounded-pill px-3">Chờ xử lý</Badge>;
-          case 'cancelled': return <Badge bg="secondary" className="rounded-pill px-3">Đã hủy</Badge>;
+          case 'completed': return <Badge bg="success" className="rounded-pill px-3 bg-opacity-75">Hoàn thành</Badge>;
+          case 'shipping': return <Badge bg="primary" className="rounded-pill px-3 bg-opacity-75">Vận chuyển</Badge>;
+          case 'pending': return <Badge bg="warning" text="dark" className="rounded-pill px-3 bg-opacity-75">Chờ xử lý</Badge>;
+          case 'cancelled': return <Badge bg="secondary" className="rounded-pill px-3 bg-opacity-75">Đã hủy</Badge>;
           default: return <Badge bg="light" text="dark">Mới</Badge>;
       }
   };
 
-  // Filter
+  // --- FILTER & PAGINATION LOGIC ---
   const filteredOrders = orders.filter(order => {
       const matchSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           order.customer.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatus = filterStatus === 'All' || order.status === filterStatus;
       return matchSearch && matchStatus;
   });
+
+  // Calculate Pagination
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleSearchChange = (e) => {
+      setSearchTerm(e.target.value);
+      setCurrentPage(1);
+  };
+
+  const handleFilterChange = (e) => {
+      setFilterStatus(e.target.value);
+      setCurrentPage(1);
+  };
 
   // Mini Stats Calculation
   const stats = {
@@ -150,7 +171,7 @@ const OrderManager = () => {
                         placeholder="Tìm mã đơn, tên khách..." 
                         className="border-start-0 shadow-none"
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={handleSearchChange}
                       />
                   </InputGroup>
               </Col>
@@ -158,7 +179,7 @@ const OrderManager = () => {
                   <Form.Select 
                     className="shadow-none" 
                     value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
+                    onChange={handleFilterChange}
                   >
                       <option value="All">Tất cả trạng thái</option>
                       <option value="pending">Chờ xử lý</option>
@@ -190,8 +211,8 @@ const OrderManager = () => {
                   </tr>
               </thead>
               <tbody>
-                  {filteredOrders.length > 0 ? (
-                      filteredOrders.map((order) => (
+                  {currentItems.length > 0 ? (
+                      currentItems.map((order) => (
                         <tr key={order.id}>
                             <td className="ps-4 fw-bold text-success">{order.id}</td>
                             <td>
@@ -219,19 +240,37 @@ const OrderManager = () => {
               </tbody>
           </Table>
           
-          {/* Pagination */}
-          <div className="p-3 border-top d-flex justify-content-between align-items-center">
-              <small className="text-muted">Hiển thị {filteredOrders.length} đơn hàng</small>
-              <div className="d-flex gap-1">
-                  <Button variant="outline-secondary" size="sm" disabled>Trước</Button>
-                  <Button variant="success" size="sm">1</Button>
-                  <Button variant="outline-secondary" size="sm">2</Button>
-                  <Button variant="outline-secondary" size="sm">Sau</Button>
+          {/* 5. PAGINATION (DÙNG CHUNG STYLE) */}
+          {totalPages > 1 && (
+              <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
+                  <Pagination className="eco-pagination mb-2">
+                      <Pagination.Prev 
+                        onClick={() => handlePageChange(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                      />
+                      {[...Array(totalPages)].map((_, idx) => (
+                          <Pagination.Item 
+                            key={idx + 1} 
+                            active={idx + 1 === currentPage}
+                            onClick={() => handlePageChange(idx + 1)}
+                          >
+                              {idx + 1}
+                          </Pagination.Item>
+                      ))}
+                      <Pagination.Next 
+                        onClick={() => handlePageChange(currentPage + 1)} 
+                        disabled={currentPage === totalPages}
+                      />
+                  </Pagination>
+                  
+                  <small className="text-muted">
+                      Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredOrders.length)} trên tổng số {filteredOrders.length} đơn hàng
+                  </small>
               </div>
-          </div>
+          )}
       </div>
 
-      {/* MODAL CHI TIẾT - Sử dụng key để reset modal khi đổi order */}
+      {/* MODAL CHI TIẾT */}
       <OrderDetailModal 
         key={selectedOrder ? selectedOrder.id : 'closed'}
         show={showModal}
