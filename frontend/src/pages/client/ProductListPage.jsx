@@ -1,78 +1,162 @@
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Pagination, Button, Offcanvas, Breadcrumb, Spinner } from "react-bootstrap";
+import React, { useState, useEffect, useMemo } from "react";
+import { Container, Row, Col, Button, Pagination, Offcanvas, Spinner, Form } from "react-bootstrap";
 import { FaFilter } from "react-icons/fa";
-// import { Link } from "react-router-dom"; // Tạm thời chưa dùng nên comment để không warn
+import { useSearchParams } from "react-router-dom";
 import ProductCard from "../../components/product/ProductCard";
 import ProductFilter from "../../components/product/ProductFilter";
 import QuickViewModal from "../../components/product/QuickViewModal";
-import productApi from "../../services/product.service"; // <--- 1. Import Service
+import productApi from "../../services/product.service";
 import '../../assets/styles/products.css';
 
 const ProductListPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showFilter, setShowFilter] = useState(false);
-  
-  // State cho Quick View Modal
   const [showQuickView, setShowQuickView] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // --- 2. STATE QUẢN LÝ DỮ LIỆU TỪ BACKEND ---
-  const [products, setProducts] = useState([]); // Chứa danh sách sản phẩm thật
-  const [loading, setLoading] = useState(true); // Trạng thái đang tải
+  const [allProducts, setAllProducts] = useState([]); 
+  const [displayProducts, setDisplayProducts] = useState([]); 
+  const [availableBrands, setAvailableBrands] = useState([]); 
+  const [loading, setLoading] = useState(true);
+  
+  const [sortOption, setSortOption] = useState(searchParams.get("sort") || "default");
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1"));
+  const itemsPerPage = 8; 
 
-  // --- 3. GỌI API KHI TRANG LOAD ---
+  // --- 1. LẤY DỮ LIỆU ---
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         const response = await productApi.getAll(); 
-        console.log("Response từ Backend:", response); // Log ra để kiểm tra
-
-        // Postman trả về: { success: true, data:Array[...] }
-        // Nên phải chọc vào .data để lấy mảng sản phẩm
         const productList = response.data || [];
-        // --- QUAN TRỌNG: MAPPING DỮ LIỆU ---
-        // Backend trả về mảng 'images', nhưng giao diện cũ dùng 'image' (string)
-        // Backend trả về 'price_cents', giao diện cũ dùng 'price'
-        // Ta cần biến đổi dữ liệu Backend cho khớp với Frontend cũ để không vỡ giao diện
-        const formattedProducts = productList.map(item => ({
-          id: item._id, // Mongo dùng _id
-          name: item.name,
-          // Giả định backend lưu 50000 là 50000, nếu lưu cents (x100) thì chia 100 ở đây
-          price: item.price_cents, 
-          // Nếu có giá gốc (compareAtPrice) thì map sang salePrice
-          salePrice: item.compareAtPriceCents || null, 
-          // Lấy ảnh đầu tiên làm ảnh đại diện
-          image: item.images?.[0]?.imageUrl || 'https://via.placeholder.com/300', 
-          category: item.categoryId?.name || "Sản phẩm", // Cần backend populate category, nếu chưa thì tạm hiện text
-          ...item // Giữ lại các trường khác nếu cần
-        }));
 
-        setProducts(formattedProducts);
+        const formattedProducts = productList.map(item => {
+            let catId = "unknown";
+            if (item.categoryId) {
+                if (typeof item.categoryId === 'object' && item.categoryId._id) {
+                    catId = item.categoryId._id.toString();
+                } else {
+                    catId = item.categoryId.toString();
+                }
+            }
+            return {
+              ...item,
+              id: item._id, 
+              price: item.price_cents, 
+              salePrice: item.compareAtPriceCents || null, 
+              image: item.images?.[0]?.imageUrl || 'https://placehold.co/300x300?text=No+Image', 
+              categoryId: catId, 
+              brand: item.brand || "Khác",
+            };
+        });
+
+        setAllProducts(formattedProducts);
+        const brands = [...new Set(formattedProducts.map(p => p.brand).filter(b => b && b !== "Khác"))];
+        setAvailableBrands(brands);
+
       } catch (error) {
-        console.error("Lỗi tải sản phẩm:", error);
+        console.error("Lỗi:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProducts();
-  }, []);
+  }, []); 
 
-  // Hàm mở modal
-  const handleQuickView = (product) => {
-    setSelectedProduct(product);
-    setShowQuickView(true);
+  // --- 2. LOGIC LỌC (CORE) ---
+  useEffect(() => {
+      if (allProducts.length === 0) return;
+
+      let result = [...allProducts];
+
+      const catIds = searchParams.getAll("category");
+      const brands = searchParams.getAll("brand");
+      const prices = searchParams.getAll("price"); 
+      const sort = searchParams.get("sort") || "default";
+      const page = parseInt(searchParams.get("page") || "1");
+
+      // 1. Lọc Danh mục
+      if (catIds.length > 0) {
+          result = result.filter(p => catIds.includes(String(p.categoryId)));
+      }
+
+      // 2. Lọc Brand
+      if (brands.length > 0) {
+          result = result.filter(p => brands.includes(p.brand));
+      }
+
+      // 3. Lọc Giá (Logic OR: Thỏa mãn 1 trong các khoảng chọn là được)
+      if (prices.length > 0) {
+          result = result.filter(p => {
+              // Kiểm tra xem sản phẩm có nằm trong BẤT KỲ khoảng nào được chọn không
+              return prices.some(range => {
+                  const [min, max] = range.split('-').map(Number);
+                  return p.price >= min && p.price <= max;
+              });
+          });
+      }
+
+      // 4. Sort
+      if (sort === "price-asc") result.sort((a, b) => a.price - b.price);
+      else if (sort === "price-desc") result.sort((a, b) => b.price - a.price);
+      else if (sort === "name-asc") result.sort((a, b) => a.name.localeCompare(b.name));
+      else if (sort === "name-desc") result.sort((a, b) => b.name.localeCompare(a.name));
+
+      setDisplayProducts(result);
+      setSortOption(sort);
+      setCurrentPage(page);
+      
+  }, [searchParams, allProducts]);
+
+  // --- 3. EVENT HANDLERS ---
+  const handleFilterChange = (filters) => {
+      const params = {};
+      
+      if (sortOption !== "default") params.sort = sortOption;
+      if (filters.categoryIds.length > 0) params.category = filters.categoryIds;
+      if (filters.brands.length > 0) params.brand = filters.brands;
+      if (filters.priceRanges.length > 0) params.price = filters.priceRanges;
+
+      setSearchParams(params);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleSortChange = (e) => {
+      const type = e.target.value;
+      setSearchParams(prev => {
+          prev.set("sort", type);
+          prev.set("page", "1");
+          return prev;
+      });
+  };
+
+  const handleReset = () => {
+      setSearchParams({});
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = displayProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(displayProducts.length / itemsPerPage);
+  const paginate = (pageNumber) => {
+      setSearchParams(prev => { prev.set("page", pageNumber); return prev; });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleQuickView = (product) => { setSelectedProduct(product); setShowQuickView(true); };
+
+  // Khởi tạo state ban đầu cho bộ lọc
+  const initialFilters = useMemo(() => ({
+      categoryIds: searchParams.getAll("category"),
+      brands: searchParams.getAll("brand"),
+      priceRanges: searchParams.getAll("price")
+  }), [searchParams]);
 
   return (
     <div className="bg-light min-vh-100 pb-5">
-        {/* --- BANNER HEADER (GIỮ NGUYÊN) --- */}
         <div className="position-relative py-5 mb-4 text-center text-white" 
-             style={{
-                 backgroundImage: 'url("https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80")',
-                 backgroundSize: 'cover',
-                 backgroundPosition: 'center'
-             }}>
+             style={{backgroundImage: 'url("https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80")', backgroundSize: 'cover', backgroundPosition: 'center'}}>
             <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark opacity-50"></div>
             <Container className="position-relative z-1">
                 <h2 className="display-5 fw-bold mb-2">Cửa Hàng Xanh</h2>
@@ -82,64 +166,64 @@ const ProductListPage = () => {
 
         <Container>
             <Row>
-                {/* SIDEBAR FILTER (Desktop) */}
                 <Col lg={3} className="d-none d-lg-block">
-                    <ProductFilter />
+                    <ProductFilter 
+                        onFilter={handleFilterChange} 
+                        onReset={handleReset} 
+                        availableBrands={availableBrands}
+                        initialFilters={initialFilters}
+                    />
                 </Col>
 
-                {/* PRODUCT CONTENT */}
                 <Col lg={9}>
-                    {/* Toolbar */}
                     <div className="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
                         <div className="d-flex align-items-center gap-2">
                             <Button variant="outline-success" className="d-lg-none d-flex align-items-center gap-2" onClick={() => setShowFilter(true)}>
                                 <FaFilter /> Lọc
                             </Button>
-                            <span className="text-muted d-none d-md-block">Hiển thị <strong>{products.length}</strong> sản phẩm</span>
+                            <span className="text-muted">Hiển thị <strong>{currentItems.length}</strong> / {displayProducts.length} sản phẩm</span>
                         </div>
-                        
                         <div className="d-flex align-items-center gap-2">
                             <span className="text-muted d-none d-md-block small">Sắp xếp:</span>
-                            <Form.Select size="sm" style={{ width: "180px", borderRadius: '20px' }}>
-                                <option>Mới nhất</option>
-                                <option>Bán chạy nhất</option>
-                                <option>Giá: Thấp đến Cao</option>
-                                <option>Giá: Cao đến Thấp</option>
+                            <Form.Select size="sm" style={{ width: "160px", borderRadius: '20px' }} value={sortOption} onChange={handleSortChange}>
+                                <option value="default">Mặc định</option>
+                                <option value="price-asc">Giá: Thấp đến Cao</option>
+                                <option value="price-desc">Giá: Cao đến Thấp</option>
+                                <option value="name-asc">Tên: A đến Z</option>
+                                <option value="name-desc">Tên: Z đến A</option>
                             </Form.Select>
                         </div>
                     </div>
 
-                    {/* --- HIỂN THỊ LOADING HOẶC DANH SÁCH --- */}
                     {loading ? (
-                        <div className="text-center py-5">
-                             <Spinner animation="border" variant="success" />
-                             <p className="mt-2 text-muted">Đang tải sản phẩm...</p>
-                        </div>
+                        <div className="text-center py-5"><Spinner animation="border" variant="success" /></div>
                     ) : (
-                        <Row xs={2} md={3} lg={3} className="g-3 g-md-4">
-                            {products.length > 0 ? (
-                                products.map((product) => (
+                        <Row xs={2} md={3} lg={4} className="g-3">
+                            {currentItems.length > 0 ? (
+                                currentItems.map((product) => (
                                     <Col key={product.id}>
                                         <ProductCard product={product} onQuickView={handleQuickView} />
                                     </Col>
                                 ))
                             ) : (
-                                <Col xs={12} className="text-center py-5">
-                                    <p>Chưa có sản phẩm nào.</p>
+                                <Col xs={12} className="text-center py-5 text-muted">
+                                    <p>Không tìm thấy sản phẩm nào phù hợp.</p>
+                                    <Button variant="outline-success" onClick={handleReset}>Xem tất cả</Button>
                                 </Col>
                             )}
                         </Row>
                     )}
 
-                    {/* Pagination - Có thể cần logic backend sau này, tạm giữ nguyên UI */}
-                    {!loading && products.length > 0 && (
+                    {!loading && totalPages > 1 && (
                         <div className="d-flex justify-content-center mt-5">
                             <Pagination className="eco-pagination">
-                                <Pagination.Prev />
-                                <Pagination.Item active>{1}</Pagination.Item>
-                                <Pagination.Item>{2}</Pagination.Item>
-                                <Pagination.Item>{3}</Pagination.Item>
-                                <Pagination.Next />
+                                <Pagination.Prev onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}/>
+                                {[...Array(totalPages)].map((_, index) => (
+                                    <Pagination.Item key={index + 1} active={index + 1 === currentPage} onClick={() => paginate(index + 1)}>
+                                        {index + 1}
+                                    </Pagination.Item>
+                                ))}
+                                <Pagination.Next onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}/>
                             </Pagination>
                         </div>
                     )}
@@ -147,22 +231,21 @@ const ProductListPage = () => {
             </Row>
         </Container>
 
-        {/* OFFCANVAS FILTER (Mobile) */}
         <Offcanvas show={showFilter} onHide={() => setShowFilter(false)} placement="start">
             <Offcanvas.Header closeButton>
-                <Offcanvas.Title className="fw-bold text-success"><FaFilter/> Bộ lọc sản phẩm</Offcanvas.Title>
+                <Offcanvas.Title className="fw-bold text-success">Bộ lọc</Offcanvas.Title>
             </Offcanvas.Header>
             <Offcanvas.Body>
-                <ProductFilter />
+                <ProductFilter 
+                    onFilter={handleFilterChange} 
+                    onReset={handleReset} 
+                    availableBrands={availableBrands}
+                    initialFilters={initialFilters}
+                />
             </Offcanvas.Body>
         </Offcanvas>
 
-        {/* QUICK VIEW MODAL */}
-        <QuickViewModal 
-            show={showQuickView} 
-            handleClose={() => setShowQuickView(false)} 
-            product={selectedProduct} 
-        />
+        <QuickViewModal show={showQuickView} handleClose={() => setShowQuickView(false)} product={selectedProduct} />
     </div>
   );
 };
