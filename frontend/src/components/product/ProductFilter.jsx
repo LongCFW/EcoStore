@@ -1,82 +1,165 @@
-import React from 'react';
-import { Form, Button, Accordion } from 'react-bootstrap';
-import { FaFilter, FaStar } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { Form, Button, Accordion, Spinner } from 'react-bootstrap';
+import { FaFilter, FaRedo } from 'react-icons/fa';
+import categoryApi from '../../services/category.service';
 
-const ProductFilter = () => {
+// Định nghĩa các khoảng giá (Value dạng chuỗi "min-max" để dễ xử lý trên URL)
+const PRICE_RANGES = [
+    { label: "Dưới 100k", value: "0-100000" },
+    { label: "100k - 300k", value: "100000-300000" },
+    { label: "300k - 500k", value: "300000-500000" },
+    { label: "Trên 500k", value: "500000-999999999" }
+];
+
+const ProductFilter = ({ onFilter, onReset, availableBrands = [], initialFilters }) => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- STATE ---
+  const [selectedCats, setSelectedCats] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedPrices, setSelectedPrices] = useState([]); 
+
+  // Sync state khi initialFilters thay đổi (F5 hoặc URL change)
+  useEffect(() => {
+      if (initialFilters) {
+          setSelectedCats(initialFilters.categoryIds || []);
+          setSelectedBrands(initialFilters.brands || []);
+          setSelectedPrices(initialFilters.priceRanges || []); 
+      }
+  }, [initialFilters]);
+
+  // Lấy danh mục từ API
+  useEffect(() => {
+      const fetchCategories = async () => {
+          try {
+              const response = await categoryApi.getAll();
+              setCategories(response.data || []);
+          } catch (error) {
+              console.error("Lỗi tải danh mục:", error);
+          } finally {
+              setLoading(false);
+          }
+      };
+      fetchCategories();
+  }, []);
+
+  // --- LOGIC GỬI DỮ LIỆU ---
+  const triggerFilter = (newCats, newBrands, newPrices) => {
+      onFilter({
+          categoryIds: newCats ?? selectedCats,
+          brands: newBrands ?? selectedBrands,
+          priceRanges: newPrices ?? selectedPrices 
+      });
+  };
+
+  // 1. Chọn Danh mục
+  const handleCatChange = (catId) => {
+      const newCats = selectedCats.includes(catId) 
+          ? selectedCats.filter(id => id !== catId) 
+          : [...selectedCats, catId];
+      setSelectedCats(newCats);
+      triggerFilter(newCats, null, null);
+  };
+
+  // 2. Chọn Brand
+  const handleBrandChange = (brandName) => {
+      const newBrands = selectedBrands.includes(brandName) 
+          ? selectedBrands.filter(b => b !== brandName) 
+          : [...selectedBrands, brandName];
+      setSelectedBrands(newBrands);
+      triggerFilter(null, newBrands, null);
+  };
+
+  // 3. Chọn Giá (Đã đổi sang Checkbox logic)
+  const handlePriceChange = (rangeValue) => {
+      const newPrices = selectedPrices.includes(rangeValue)
+          ? selectedPrices.filter(p => p !== rangeValue) // Bỏ chọn
+          : [...selectedPrices, rangeValue]; // Chọn thêm
+      
+      setSelectedPrices(newPrices);
+      triggerFilter(null, null, newPrices);
+  };
+
+  // 4. Reset
+  const handleResetFilter = () => {
+      setSelectedCats([]);
+      setSelectedBrands([]);
+      setSelectedPrices([]);
+      onReset(); 
+  };
+
   return (
     <div className="filter-sidebar">
-      <div className="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom">
-        <FaFilter className="text-success" />
-        <h5 className="fw-bold m-0">Bộ Lọc Tìm Kiếm</h5>
+      <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+        <div className="d-flex align-items-center gap-2">
+            <FaFilter className="text-success" />
+            <h5 className="fw-bold m-0">Bộ Lọc</h5>
+        </div>
+        <Button variant="link" size="sm" className="text-muted text-decoration-none p-0" onClick={handleResetFilter}>
+            <FaRedo className="me-1"/> Reset
+        </Button>
       </div>
 
-      {/* Accordion cho các nhóm lọc để gọn gàng */}
       <Accordion defaultActiveKey={['0', '1', '2']} alwaysOpen flush>
         
-        {/* 1. DANH MỤC */}
+        {/* DANH MỤC */}
         <Accordion.Item eventKey="0" className="border-0 mb-3">
-            <Accordion.Header><span className="fw-bold">Danh Mục Sản Phẩm</span></Accordion.Header>
+            <Accordion.Header><span className="fw-bold">Danh Mục</span></Accordion.Header>
             <Accordion.Body className="px-0 pt-2">
-                {['Rau củ hữu cơ', 'Trái cây tươi', 'Thịt & Hải sản', 'Hạt & Ngũ cốc', 'Đồ uống healthy', 'Combo tiết kiệm'].map((cat, idx) => (
-                    <Form.Check 
-                        key={idx} 
-                        type="checkbox" 
-                        label={cat} 
-                        id={`cat-${idx}`}
-                        className="mb-2 text-secondary custom-checkbox" 
-                    />
-                ))}
+                {loading ? <Spinner animation="border" variant="success" size="sm" /> : (
+                    categories.length > 0 ? categories.map((cat) => (
+                        <Form.Check 
+                            key={cat._id} 
+                            type="checkbox" 
+                            label={cat.name} 
+                            checked={selectedCats.includes(cat._id)}
+                            onChange={() => handleCatChange(cat._id)}
+                            className="mb-2 text-secondary custom-checkbox" 
+                        />
+                    )) : <p className="text-muted small">Đang cập nhật...</p>
+                )}
             </Accordion.Body>
         </Accordion.Item>
 
-        {/* 2. KHOẢNG GIÁ */}
+        {/* KHOẢNG GIÁ */}
         <Accordion.Item eventKey="1" className="border-0 mb-3">
             <Accordion.Header><span className="fw-bold">Khoảng Giá</span></Accordion.Header>
             <Accordion.Body className="px-0 pt-2">
                 <div className="d-flex flex-column gap-2">
-                    <Form.Check type="radio" name="price" label="Dưới 100.000đ" id="p1"/>
-                    <Form.Check type="radio" name="price" label="100.000đ - 300.000đ" id="p2"/>
-                    <Form.Check type="radio" name="price" label="300.000đ - 500.000đ" id="p3"/>
-                    <Form.Check type="radio" name="price" label="Trên 500.000đ" id="p4"/>
+                    {PRICE_RANGES.map((range, idx) => (
+                        <Form.Check 
+                            key={idx}
+                            type="checkbox" // Đổi thành checkbox
+                            id={`price-${idx}`}
+                            label={range.label}
+                            checked={selectedPrices.includes(range.value)}
+                            onChange={() => handlePriceChange(range.value)}
+                            className="mb-2 text-secondary custom-checkbox"
+                        />
+                    ))}
                 </div>
-                {/* Input range tự nhập (Giả lập) */}
-                <div className="d-flex gap-2 mt-3 align-items-center">
-                    <Form.Control size="sm" placeholder="Từ" />
-                    <span>-</span>
-                    <Form.Control size="sm" placeholder="Đến" />
-                </div>
-                <Button variant="outline-success" size="sm" className="w-100 mt-2 rounded-pill">Áp dụng</Button>
             </Accordion.Body>
         </Accordion.Item>
 
-        {/* 3. ĐÁNH GIÁ */}
+        {/* THƯƠNG HIỆU */}
         <Accordion.Item eventKey="2" className="border-0">
-            <Accordion.Header><span className="fw-bold">Đánh Giá</span></Accordion.Header>
+            <Accordion.Header><span className="fw-bold">Thương Hiệu</span></Accordion.Header>
             <Accordion.Body className="px-0 pt-2">
-                {[5, 4, 3].map(star => (
+                {availableBrands.length > 0 ? availableBrands.map((brand, idx) => (
                     <Form.Check 
-                        key={star}
+                        key={idx}
                         type="checkbox"
-                        id={`star-${star}`}
-                        label={
-                            <div className="d-flex align-items-center text-warning">
-                                {[...Array(5)].map((_, i) => (
-                                    <FaStar key={i} className={i < star ? "" : "text-muted opacity-25"} />
-                                ))}
-                                <span className="text-dark ms-2 small">từ {star} sao</span>
-                            </div>
-                        }
-                        className="mb-2"
+                        label={brand}
+                        checked={selectedBrands.includes(brand)}
+                        onChange={() => handleBrandChange(brand)}
+                        className="mb-2 text-secondary custom-checkbox"
                     />
-                ))}
+                )) : <p className="text-muted small">Chưa có thương hiệu</p>}
             </Accordion.Body>
         </Accordion.Item>
 
       </Accordion>
-
-      <Button variant="success" className="w-100 mt-4 rounded-pill py-2 fw-bold shadow-sm">
-        Lọc Kết Quả
-      </Button>
     </div>
   );
 };
