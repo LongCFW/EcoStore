@@ -30,6 +30,7 @@ const ProductSchema = new Schema({
     description: String,
     shortDescription: String,
 
+    brand: { type: String, index: true },
     // Liên kết với Category
     categoryId: { type: Schema.Types.ObjectId, ref: "Category", required: true },
 
