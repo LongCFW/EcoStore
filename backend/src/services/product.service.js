@@ -21,6 +21,6 @@ export const createProductService = async (data) => {
 // Chúng ta cũng cần hàm lấy danh sách sản phẩm để tí nữa test
 export const getAllProductsService = async () => {
     return await Product.find()
-        .populate("categoryId", "name slug") // Lấy thêm tên và slug của danh mục để hiển thị cho đẹp
+        .populate("categoryId", "_id name slug") // Lấy thêm tên và slug của danh mục để hiển thị cho đẹp
         .sort({ createdAt: -1 });
 };
