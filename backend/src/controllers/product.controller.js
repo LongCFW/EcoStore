@@ -27,6 +27,7 @@ export const createProduct = async (req, res, next) => {
         const { 
             name, 
             categoryId, 
+            brand,
             price_cents, 
             variants, 
             images, 
@@ -38,6 +39,7 @@ export const createProduct = async (req, res, next) => {
         const product = await createProductService({
             name,
             categoryId,
+            brand,
             price_cents,
             variants,
             images,
