@@ -24,6 +24,7 @@ import StatsPage from "../pages/admin/StatsPage";
 import SettingsPage from "../pages/admin/SettingsPage";
 import SystemLogPage from '../pages/admin/SystemLogPage';
 import AdminProfile from "../pages/admin/AdminProfile";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
@@ -45,6 +46,7 @@ const AppRoutes = () => {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
       </Route>
 
       {/* ADMIN ROUTES - PHÂN QUYỀN Ở ĐÂY */}

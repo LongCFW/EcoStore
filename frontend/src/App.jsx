@@ -1,14 +1,11 @@
 import React from "react";
-import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <AuthProvider> {/* AuthProvider bây giờ đã nằm TRONG Router của main.jsx */}
         <AppRoutes />
-      </BrowserRouter>
     </AuthProvider>
   );
 }

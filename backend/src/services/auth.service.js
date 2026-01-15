@@ -36,7 +36,7 @@ export const loginService = async (email, password) => {
     };
 };
 
-export const registerService = async (email, password, name) => {
+export const registerService = async (email, password, name, phone) => {
     // 1. Kiểm tra xem email đã tồn tại chưa
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -58,6 +58,7 @@ export const registerService = async (email, password, name) => {
         email,
         password_hash: hashedPassword,
         name,
+        phone,
         role: customerRole._id,
         email_Verified: false // Mới tạo thì chưa verify email
     });
@@ -68,4 +69,29 @@ export const registerService = async (email, password, name) => {
         name: newUser.name,
         role: "customer"
     };
+};
+
+// --- API MỚI: Kiểm tra Email & SĐT ---
+export const verifyResetService = async (email, phone) => {
+    const user = await User.findOne({ email, phone });
+    if (!user) {
+        throw new Error("Thông tin xác thực không đúng");
+    }
+    return true; // Tìm thấy user
+};
+
+// --- API MỚI: Đặt lại mật khẩu ---
+export const resetPasswordService = async (email, phone, newPassword) => {
+    const user = await User.findOne({ email, phone });
+    if (!user) {
+        throw new Error("Người dùng không tồn tại");
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    user.password_hash = hashedPassword;
+    await user.save();
+
+    return true;
 };

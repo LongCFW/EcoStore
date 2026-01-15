@@ -2,13 +2,19 @@ import React, { useState } from "react";
 import { Navbar, Container, Nav, Form, Button, Badge, Dropdown, Offcanvas } from "react-bootstrap";
 import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart, FaUser } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
-// Giả lập trạng thái (Để false để test giao diện Khách, true để test giao diện User)
-const isLoggedIn = false; 
-const userAvatar = null; 
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Lấy user và hàm logout từ AuthContext
+  const { user, logout } = useAuth(); // <--- SỬ DỤNG HOOK
+
+  // Logic kiểm tra login thật sự
+  const isLoggedIn = !!user; // Nếu có user object -> true
+  const userAvatar = user?.avatarUrl || null; // Lấy avatar từ user object (nếu có)
+  const userName = user?.name || "User"; // Lấy tên user
 
   return (
     <>
@@ -96,14 +102,14 @@ const Header = () => {
                             {isLoggedIn ? (
                                 <>
                                     <div className="px-3 py-2 border-bottom mb-2 bg-light rounded-top-3 mx-n2 mt-n2">
-                                        <div className="fw-bold text-dark">Xin chào, User</div>
-                                        <small className="text-muted">Thành viên</small>
+                                        <div className="fw-bold text-dark">Xin chào {userName}</div>
+                                        <small className="text-muted">{user?.email}</small>
                                     </div>
                                     <Dropdown.Item as={Link} to="/profile" className="rounded-2 py-2 mb-1 fw-medium"><FaUserCircle className="me-2 text-success"/> Tài khoản</Dropdown.Item>
                                     <Dropdown.Item as={Link} to="/profile?tab=orders" className="rounded-2 py-2 mb-1 fw-medium"><FaBoxOpen className="me-2 text-primary"/> Đơn mua</Dropdown.Item>
                                     <Dropdown.Item as={Link} to="/profile?tab=wishlist" className="rounded-2 py-2 mb-1 fw-medium"><FaHeart className="me-2 text-danger"/> Yêu thích</Dropdown.Item>
                                     <Dropdown.Divider />
-                                    <Dropdown.Item className="text-danger rounded-2 py-2 fw-bold"><FaSignOutAlt className="me-2"/> Đăng xuất</Dropdown.Item>
+                                    <Dropdown.Item onClick={logout} className="text-danger rounded-2 py-2 fw-bold"><FaSignOutAlt className="me-2"/> Đăng xuất</Dropdown.Item>
                                 </>
                             ) : (
                                 <>
