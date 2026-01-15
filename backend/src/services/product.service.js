@@ -24,3 +24,21 @@ export const getAllProductsService = async () => {
         .populate("categoryId", "_id name slug") // Lấy thêm tên và slug của danh mục để hiển thị cho đẹp
         .sort({ createdAt: -1 });
 };
+
+export const getProductBySlugService = async (slug) => {
+    // Tìm sản phẩm theo slug, populate category để lấy tên danh mục
+    const product = await Product.findOne({ slug: slug })
+        .populate("categoryId", "_id name slug");
+        
+    return product;
+};
+
+// Lấy sản phẩm liên quan
+export const getRelatedProductsService = async (categoryId, currentProductId) => {
+    return await Product.find({
+        categoryId: categoryId,       // Cùng danh mục
+        _id: { $ne: currentProductId } // Loại trừ ID hiện tại ($ne = not equal)
+    })
+    .limit(4) // Chỉ lấy 4 sản phẩm
+    .populate("categoryId", "_id name slug"); // Populate để lấy thông tin đẹp
+};
