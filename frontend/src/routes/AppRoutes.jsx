@@ -32,7 +32,7 @@ const AppRoutes = () => {
       {/* Client Routes - Dùng MainLayout */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="/product/:id" element={<ProductDetailPage />} />
+        <Route path="/product/:slug" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/profile" element={<UserProfilePage />} />
         <Route path="/products" element={<ProductListPage />} />

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Modal, Row, Col, Button, Badge, Form } from 'react-bootstrap';
+import React, { useState } from 'react'; // Added useEffect
+import { Modal, Row, Col, Button, Badge } from 'react-bootstrap';
 import { FaShoppingCart, FaCheck, FaTimes, FaMinus, FaPlus } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
@@ -13,18 +13,22 @@ const QuickViewModal = ({ show, handleClose, product }) => {
     if (type === 'dec' && quantity > 1) setQuantity(q => q - 1);
   };
 
+  // Safe check for price to avoid toLocaleString error
+  const displayPrice = product.salePrice || product.price || 0;
+  const originalPrice = product.price || 0;
+
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered className="quick-view-modal">
       <Modal.Header closeButton className="border-0 position-absolute end-0 top-0 z-3"></Modal.Header>
       <Modal.Body className="p-0">
         <Row className="g-0">
-            {/* Cột trái: Ảnh */}
+            {/* Left Column: Image */}
             <Col md={6} className="bg-light d-flex align-items-center justify-content-center p-3">
                 <div className="position-relative w-100 h-100" style={{minHeight: '300px'}}>
                     <img 
                         src={product.image} 
                         alt={product.name} 
-                        className="img-fluid rounded shadow-sm w-100 h-100 object-fit-cover" 
+                        className="img-fluid rounded shadow-sm w-100 h-100 object-fit-contain" 
                     />
                     {product.salePrice && (
                         <Badge bg="danger" className="position-absolute top-0 start-0 m-2 px-3 py-2">
@@ -34,11 +38,11 @@ const QuickViewModal = ({ show, handleClose, product }) => {
                 </div>
             </Col>
 
-            {/* Cột phải: Thông tin */}
+            {/* Right Column: Info */}
             <Col md={6} className="p-4 d-flex flex-column">
                 <div className="mb-2">
                     <Badge bg="success" className="bg-opacity-10 text-success border border-success me-2">
-                        {product.category || 'Sản phẩm Eco'}
+                        {product.categoryName || 'Sản phẩm Eco'}
                     </Badge>
                     <span className={`small ${product.stock !== 0 ? 'text-success' : 'text-danger'}`}>
                         {product.stock !== 0 ? <><FaCheck className="me-1"/>Còn hàng</> : <><FaTimes className="me-1"/>Hết hàng</>}
@@ -49,17 +53,17 @@ const QuickViewModal = ({ show, handleClose, product }) => {
                 
                 <div className="mb-4">
                     <span className="display-6 fw-bold text-success me-3">
-                        {product.salePrice ? product.salePrice.toLocaleString() : product.price.toLocaleString()} đ
+                        {displayPrice.toLocaleString()} đ
                     </span>
                     {product.salePrice && (
                         <span className="text-muted text-decoration-line-through fs-5">
-                            {product.price.toLocaleString()} đ
+                            {originalPrice.toLocaleString()} đ
                         </span>
                     )}
                 </div>
 
-                <p className="text-muted small mb-4 flex-grow-1">
-                    {product.description || "Sản phẩm xanh, sạch, thân thiện với môi trường. Đảm bảo chất lượng và an toàn cho sức khỏe người tiêu dùng."}
+                <p className="text-muted small mb-4 flex-grow-1" style={{maxHeight: '100px', overflowY: 'auto'}}>
+                    {product.shortDescription || product.description || "Sản phẩm xanh, sạch, thân thiện với môi trường. Đảm bảo chất lượng và an toàn cho sức khỏe người tiêu dùng."}
                 </p>
 
                 {/* Action Area */}
@@ -74,7 +78,13 @@ const QuickViewModal = ({ show, handleClose, product }) => {
                             <FaShoppingCart className="me-2"/> Thêm vào giỏ
                         </Button>
                     </div>
-                    <Link to={`/product/${product.id}`} className="text-center d-block text-decoration-none small text-muted hover-green">
+                    
+                    {/* FIX: Add onClick={handleClose} to close modal when navigating */}
+                    <Link 
+                        to={`/product/${product.slug}`} 
+                        className="text-center d-block text-decoration-none small text-muted hover-green"
+                        onClick={handleClose} 
+                    >
                         Xem chi tiết sản phẩm &rarr;
                     </Link>
                 </div>

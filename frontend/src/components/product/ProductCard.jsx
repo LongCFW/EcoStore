@@ -2,7 +2,7 @@ import React from "react";
 import { Card, Badge } from "react-bootstrap";
 import { FaShoppingCart, FaEye, FaBolt, FaHeart } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import '../../assets/styles/products.css'; // Import CSS
+import '../../assets/styles/products.css'; 
 
 const ProductCard = ({ product, onQuickView }) => {
   return (
@@ -19,7 +19,7 @@ const ProductCard = ({ product, onQuickView }) => {
           
           {/* OVERLAY BUTTONS (Chỉ hiện khi hover ở Desktop) */}
           <div className="card-actions-overlay">
-              <Link to={`/product/${product.id}`} className="action-btn">
+              <Link to={`/product/${product.slug}`} className="action-btn">
                   <FaEye /> Chi tiết
               </Link>
               {/* Nút Xem Nhanh (Gọi hàm từ cha nếu có, hoặc alert) */}
@@ -50,7 +50,7 @@ const ProductCard = ({ product, onQuickView }) => {
         </div>
         
         <Card.Title className="fs-6 mb-2">
-          <Link to={`/product/${product.id}`} className="text-decoration-none text-dark fw-bold text-truncate-2-lines">
+          <Link to={`/product/${product.slug}`} className="text-decoration-none text-dark fw-bold text-truncate-2-lines">
             {product.name}
           </Link>
         </Card.Title>

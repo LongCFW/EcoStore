@@ -11,6 +11,11 @@ const productApi = {
   // Lấy chi tiết (dùng sau này)
   getBySlug: (slug) => {
     return axiosClient.get(`/products/${slug}`);
+  },
+
+  // lấy sản phẩm gần đây
+  getRelated: (categoryId, currentProductId) => {
+    return axiosClient.get(`/products/related?categoryId=${categoryId}&currentProductId=${currentProductId}`);
   }
 };
 
