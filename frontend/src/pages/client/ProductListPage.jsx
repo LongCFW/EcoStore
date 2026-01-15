@@ -20,10 +20,12 @@ const ProductListPage = () => {
   const [loading, setLoading] = useState(true);
   
   const [sortOption, setSortOption] = useState(searchParams.get("sort") || "default");
+  
+  // Initialize page from URL, default to 1
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1"));
-  const itemsPerPage = 8; 
+  const itemsPerPage = 8; // Declared once
 
-  // --- 1. LẤY DỮ LIỆU ---
+  // --- 1. FETCH DATA ---
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -64,7 +66,7 @@ const ProductListPage = () => {
     fetchProducts();
   }, []); 
 
-  // --- 2. LOGIC LỌC (CORE) ---
+  // --- 2. FILTER LOGIC & URL SYNC ---
   useEffect(() => {
       if (allProducts.length === 0) return;
 
@@ -76,20 +78,19 @@ const ProductListPage = () => {
       const sort = searchParams.get("sort") || "default";
       const page = parseInt(searchParams.get("page") || "1");
 
-      // 1. Lọc Danh mục
+      // 1. Filter Category
       if (catIds.length > 0) {
           result = result.filter(p => catIds.includes(String(p.categoryId)));
       }
 
-      // 2. Lọc Brand
+      // 2. Filter Brand
       if (brands.length > 0) {
           result = result.filter(p => brands.includes(p.brand));
       }
 
-      // 3. Lọc Giá (Logic OR: Thỏa mãn 1 trong các khoảng chọn là được)
+      // 3. Filter Price
       if (prices.length > 0) {
           result = result.filter(p => {
-              // Kiểm tra xem sản phẩm có nằm trong BẤT KỲ khoảng nào được chọn không
               return prices.some(range => {
                   const [min, max] = range.split('-').map(Number);
                   return p.price >= min && p.price <= max;
@@ -113,10 +114,17 @@ const ProductListPage = () => {
   const handleFilterChange = (filters) => {
       const params = {};
       
+      // Preserve current sort
       if (sortOption !== "default") params.sort = sortOption;
+      
+      // Add filters
       if (filters.categoryIds.length > 0) params.category = filters.categoryIds;
       if (filters.brands.length > 0) params.brand = filters.brands;
       if (filters.priceRanges.length > 0) params.price = filters.priceRanges;
+
+      // FIX: Explicitly add page=1 when filtering
+      // This ensures the URL looks like: ?category=...&page=1
+      params.page = "1";
 
       setSearchParams(params);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -125,32 +133,41 @@ const ProductListPage = () => {
   const handleSortChange = (e) => {
       const type = e.target.value;
       setSearchParams(prev => {
-          prev.set("sort", type);
-          prev.set("page", "1");
-          return prev;
+          // When sorting changes, we keep existing filters but reset to page 1
+          const newParams = new URLSearchParams(prev);
+          newParams.set("sort", type);
+          newParams.set("page", "1");
+          return newParams;
       });
   };
 
   const handleReset = () => {
-      setSearchParams({});
+      // Reset means no filters, default sort, page 1
+      setSearchParams({ page: "1" }); 
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const paginate = (pageNumber) => {
+      setSearchParams(prev => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set("page", pageNumber);
+          return newParams;
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleQuickView = (product) => { setSelectedProduct(product); setShowQuickView(true); };
+
+  // Pagination Calculation
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = displayProducts.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(displayProducts.length / itemsPerPage);
-  const paginate = (pageNumber) => {
-      setSearchParams(prev => { prev.set("page", pageNumber); return prev; });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  const handleQuickView = (product) => { setSelectedProduct(product); setShowQuickView(true); };
 
-  // Khởi tạo state ban đầu cho bộ lọc
   const initialFilters = useMemo(() => ({
       categoryIds: searchParams.getAll("category"),
       brands: searchParams.getAll("brand"),
-      priceRanges: searchParams.getAll("price")
+      priceRanges: searchParams.getAll("price") 
   }), [searchParams]);
 
   return (
@@ -206,9 +223,9 @@ const ProductListPage = () => {
                                     </Col>
                                 ))
                             ) : (
-                                <Col xs={12} className="text-center py-5 text-muted">
-                                    <p>Không tìm thấy sản phẩm nào phù hợp.</p>
-                                    <Button variant="outline-success" onClick={handleReset}>Xem tất cả</Button>
+                                <Col xs={12} className="text-center py-5 text-muted d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '300px' }}>
+                                    <p className="fs-5 mb-3">Không tìm thấy sản phẩm nào phù hợp.</p>
+                                    <Button variant="outline-success" className="px-4 py-2 rounded-pill" onClick={handleReset}>Xem tất cả</Button>
                                 </Col>
                             )}
                         </Row>
