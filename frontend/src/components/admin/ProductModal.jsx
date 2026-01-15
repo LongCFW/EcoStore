@@ -1,35 +1,34 @@
-import React, { useState } from 'react';
-import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaSave, FaTimes, FaDollarSign, FaBoxOpen, FaImage } from 'react-icons/fa';
+import React, { useState, useRef } from 'react';
+import { Modal, Button, Form, Row, Col, InputGroup, Nav, Tab } from 'react-bootstrap';
+import { FaSave, FaTimes, FaDollarSign, FaBoxOpen, FaImage, FaCloudUploadAlt } from 'react-icons/fa';
 
-// Giá trị mặc định
 const DEFAULT_VALUES = {
     name: '',
-    category: '', // Để trống để bắt buộc chọn
-    price_cents: '', // Đổi tên field cho khớp Backend (price -> price_cents)
-    salePrice: '',   // Cần map sang compareAtPriceCents nếu backend dùng tên đó
+    category: '', 
+    price_cents: '', 
     stock: '',
     description: '',
-    // Thay đổi logic ảnh: lưu mảng images chứa object { imageUrl: ... }
-    imageUrl: '', // Dùng tạm state này để bind vào input URL
-    preview: 'https://via.placeholder.com/300x300?text=No+Image'
+    imageUrl: '', 
+    preview: 'https://placehold.co/300x300?text=No+Image'
 };
 
 const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) => {
+  const fileInputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('url'); // 'url' hoặc 'file'
+
   // Init State
   const [formData, setFormData] = useState(() => {
       if (product) {
-          // Map dữ liệu từ Product (Backend) vào Form
+          const img = product.images?.[0]?.imageUrl || '';
           return {
+              id: product._id || product.id,
               name: product.name,
               category: typeof product.categoryId === 'object' ? product.categoryId._id : product.categoryId,
               price_cents: product.price_cents,
-              // Nếu backend chưa có salePrice, tạm để trống hoặc lấy từ compareAtPriceCents
-              stock: product.variants?.[0]?.stock || 100, // Tạm lấy stock
+              stock: product.variants?.[0]?.stock || (product.stock || 0),
               description: product.description || '',
-              // Lấy ảnh đầu tiên ra hiển thị
-              imageUrl: product.images?.[0]?.imageUrl || '',
-              preview: product.images?.[0]?.imageUrl || DEFAULT_VALUES.preview
+              imageUrl: img,
+              preview: img || DEFAULT_VALUES.preview
           };
       }
       return DEFAULT_VALUES;
@@ -39,7 +38,7 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Xử lý khi nhập URL ảnh (Hiển thị preview ngay)
+  // 1. Xử lý nhập URL
   const handleUrlChange = (e) => {
       const url = e.target.value;
       setFormData({ 
@@ -49,25 +48,38 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
       });
   };
 
+  // 2. Xử lý chọn File (Convert to Base64)
+  const handleFileChange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              // reader.result chứa chuỗi Base64 rất dài
+              setFormData({
+                  ...formData,
+                  imageUrl: reader.result, // Lưu chuỗi base64 vào luôn field imageUrl
+                  preview: reader.result
+              });
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
   const handleSubmit = () => {
     if (!formData.name || !formData.price_cents || !formData.category) {
         alert("Vui lòng điền tên, danh mục và giá!");
         return;
     }
     
-    // Chuẩn bị dữ liệu gửi về (Map lại cho đúng Schema Backend)
     const payload = {
         name: formData.name,
-        categoryId: formData.category, // Backend cần categoryId
+        categoryId: formData.category,
         price_cents: Number(formData.price_cents),
         description: formData.description,
-        // Tạo cấu trúc images chuẩn Schema
+        // Backend nhận mảng images object
         images: formData.imageUrl ? [{ imageUrl: formData.imageUrl }] : [],
-        // Tạm thời hardcode brand để backend không lỗi validation (nếu có)
         brand: "EcoStore", 
-        // Backend đang dùng variants để lưu stock, ta cần xử lý tạm
-        // Hoặc nếu backend đã bỏ variants bắt buộc thì ok.
-        // Giả sử backend tự xử lý hoặc ta gửi variants ảo:
+        // Giả lập variants để lưu stock
         variants: [{ 
             name: "Default", 
             price_cents: Number(formData.price_cents),
@@ -75,11 +87,10 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
         }]
     };
     
-    // Gửi kèm ID nếu là sửa
-    if (product) payload.id = product.id || product._id;
+    if (formData.id) payload.id = formData.id;
 
     onSave(payload);
-    handleClose();
+    handleClose(); // Đóng modal ngay (trải nghiệm người dùng tốt hơn)
   };
 
   return (
@@ -93,27 +104,63 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
       
       <Modal.Body className="p-4 custom-scrollbar">
         <Row>
-            {/* CỘT TRÁI: ẢNH (NHẬP URL) */}
-            <Col xs={12} md={4} className="text-center mb-4 mb-md-0">
-                <div className="rounded-4 overflow-hidden border bg-light mb-3 mx-auto" style={{ height: '250px', width: '100%', maxWidth: '300px' }}>
-                    <img src={formData.preview} alt="Preview" className="w-100 h-100 object-fit-cover" 
-                         onError={(e) => e.target.src = DEFAULT_VALUES.preview}/>
-                </div>
-                <Form.Group>
-                    <Form.Label className="admin-label small">URL Hình ảnh</Form.Label>
-                    <InputGroup size="sm">
-                        <InputGroup.Text><FaImage/></InputGroup.Text>
-                        <Form.Control 
-                            type="text" 
-                            placeholder="Paste link ảnh vào đây..." 
-                            value={formData.imageUrl}
-                            onChange={handleUrlChange}
+            {/* CỘT TRÁI: ẢNH */}
+            <Col xs={12} md={4} className="mb-4 mb-md-0">
+                <div className="text-center mb-3">
+                    <div className="rounded-4 overflow-hidden border bg-light mx-auto position-relative" style={{ height: '250px', width: '100%', maxWidth: '300px' }}>
+                        <img 
+                            src={formData.preview} 
+                            alt="Preview" 
+                            className="w-100 h-100 object-fit-cover" 
+                            onError={(e) => e.target.src = DEFAULT_VALUES.preview}
                         />
-                    </InputGroup>
-                    <Form.Text className="text-muted small">
-                        Copy link ảnh từ internet và dán vào đây.
-                    </Form.Text>
-                </Form.Group>
+                    </div>
+                </div>
+
+                <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+                    <Nav variant="pills" className="justify-content-center mb-3 text-small">
+                        <Nav.Item>
+                            <Nav.Link eventKey="url" className="py-1 px-3" style={{fontSize: '0.9rem'}}>Link URL</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link eventKey="file" className="py-1 px-3" style={{fontSize: '0.9rem'}}>Tải ảnh lên</Nav.Link>
+                        </Nav.Item>
+                    </Nav>
+
+                    <Tab.Content>
+                        <Tab.Pane eventKey="url">
+                            <InputGroup size="sm">
+                                <InputGroup.Text><FaImage/></InputGroup.Text>
+                                <Form.Control 
+                                    type="text" 
+                                    placeholder="Dán link ảnh..." 
+                                    value={activeTab === 'url' ? formData.imageUrl : ''} // Chỉ hiện value nếu đang ở tab url (logic hiển thị)
+                                    onChange={handleUrlChange}
+                                />
+                            </InputGroup>
+                            <Form.Text className="text-muted small d-block mt-1">Dùng link ảnh có sẵn trên mạng.</Form.Text>
+                        </Tab.Pane>
+                        
+                        <Tab.Pane eventKey="file">
+                            <div 
+                                className="border border-dashed rounded p-3 text-center cursor-pointer hover-bg-light"
+                                onClick={() => fileInputRef.current.click()}
+                                style={{cursor: 'pointer'}}
+                            >
+                                <FaCloudUploadAlt size={24} className="text-success mb-2"/>
+                                <div className="small fw-bold">Chọn ảnh từ máy</div>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="d-none" 
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                            <Form.Text className="text-muted small d-block mt-1 text-center">Ảnh sẽ được nén vào database.</Form.Text>
+                        </Tab.Pane>
+                    </Tab.Content>
+                </Tab.Container>
             </Col>
 
             {/* CỘT PHẢI: FORM */}

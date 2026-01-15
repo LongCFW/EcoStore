@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination, Spinner } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaEdit, FaTrash, FaFilter, FaBox } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';  
 import ProductModal from '../../components/admin/ProductModal';
-import productApi from '../../services/product.service'; // Import API
-import categoryApi from '../../services/category.service'; // Import Category API
+import productApi from '../../services/product.service';
+import categoryApi from '../../services/category.service';
 import '../../assets/styles/admin.css';
 
 const ProductManager = () => {
+  const [searchParams, setSearchParams] = useSearchParams(); // Hook quản lý URL
+  
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // Lưu danh sách danh mục để truyền vào Modal
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  // State tìm kiếm & phân trang
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // --- 1. LOAD DATA TỪ API ---
+  // --- 1. LOAD DATA ---
   useEffect(() => {
       fetchData();
   }, []);
@@ -28,73 +28,89 @@ const ProductManager = () => {
   const fetchData = async () => {
       try {
           setLoading(true);
-          // Gọi song song 2 API: Lấy sản phẩm và Lấy danh mục
           const [prodRes, catRes] = await Promise.all([
               productApi.getAll(),
               categoryApi.getAll()
           ]);
-          
           setProducts(prodRes.data || []);
           setCategories(catRes.data || []);
       } catch (error) {
           console.error("Error fetching data:", error);
-          alert("Lỗi tải dữ liệu. Vui lòng thử lại!");
+          alert("Lỗi tải dữ liệu. Vui lòng kiểm tra lại kết nối hoặc đăng nhập lại.");
       } finally {
           setLoading(false);
       }
   };
 
-  // --- 2. LOGIC CRUD ---
+  // --- 2. XỬ LÝ URL MODAL (Create/Edit) ---
+  
+  // Kiểm tra URL để xác định có mở Modal không và mở chế độ nào
+  const showCreateModal = searchParams.get('action') === 'create';
+  const editId = searchParams.get('edit');
+  const showEditModal = !!editId; // Có ID là đang sửa
+  
+  // Tìm sản phẩm đang sửa dựa trên ID từ URL
+  const editingProduct = editId ? products.find(p => p._id === editId) : null;
+
+  // Hàm mở Modal Thêm Mới -> Cập nhật URL
   const handleAddNew = () => {
-      setEditingProduct(null);
-      setShowModal(true);
+      setSearchParams({ action: 'create' });
   };
 
+  // Hàm mở Modal Sửa -> Cập nhật URL
   const handleEdit = (product) => {
-      setEditingProduct(product);
-      setShowModal(true);
+      setSearchParams({ edit: product._id });
   };
 
+  // Hàm Đóng Modal -> Xóa params URL
+  const handleCloseModal = () => {
+      setSearchParams({});
+  };
+
+  // --- 3. LOGIC CRUD (Giữ nguyên, chỉ sửa đoạn đóng modal) ---
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
         try {
             await productApi.delete(id);
-            // Cập nhật lại UI sau khi xóa thành công
             setProducts(products.filter(p => p._id !== id));
             alert("Xóa thành công!");
         } catch (error) {
             console.error("Delete error:", error);
-            alert("Xóa thất bại!");
+            // Check lỗi 401/403 để báo user
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                alert("Bạn không có quyền xóa sản phẩm này (Unauthorized).");
+            } else {
+                alert("Xóa thất bại!");
+            }
         }
     }
   };
 
   const handleSave = async (formData) => {
     try {
-        if (editingProduct) {
-            // --- UPDATE ---
+        if (editingProduct) { // Dùng biến editingProduct tính từ URL
             const res = await productApi.update(formData.id, formData);
-            // Cập nhật state list (Thay thế item cũ bằng item mới từ server trả về)
             setProducts(products.map(p => p._id === formData.id ? res.data.data : p));
             alert("Cập nhật thành công!");
         } else {
-            // --- CREATE ---
             const res = await productApi.create(formData);
-            // Thêm item mới vào đầu danh sách
             setProducts([res.data.data, ...products]);
             alert("Thêm mới thành công!");
         }
+        handleCloseModal(); // Đóng modal = xóa URL
     } catch (error) {
         console.error("Save error:", error);
-        alert("Lưu thất bại! Kiểm tra lại thông tin.");
+        if (error.response && error.response.status === 401) {
+            alert("Lỗi xác thực: Vui lòng đăng nhập lại (Token hết hạn hoặc không hợp lệ).");
+        } else {
+            alert("Lưu thất bại! " + (error.response?.data?.message || ""));
+        }
     }
   };
 
-  // --- 3. FILTER & PAGINATION (Client-side) ---
+  // --- 4. FILTER & PAGINATION ---
   const filteredProducts = products.filter(item => {
       const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-      // Lọc theo Category ID hoặc Name tùy backend trả về gì
-      // Ở đây giả sử item.categoryId là object populated
       const catName = typeof item.categoryId === 'object' ? item.categoryId.name : "";
       const matchCategory = filterCategory === 'All' || catName === filterCategory;
       return matchSearch && matchCategory;
@@ -120,8 +136,8 @@ const ProductManager = () => {
         </Button>
       </div>
 
-      {/* FILTER */}
-      <div className="table-card p-3 mb-4">
+      {/* FILTER & TABLE */}
+      <div className="table-card p-3 mb-4">          
           <Row className="g-3 align-items-center">
               <Col md={4}>
                   <InputGroup>
@@ -150,7 +166,6 @@ const ProductManager = () => {
           </Row>
       </div>
 
-      {/* TABLE */}
       <div className="table-card overflow-hidden">
           <Table hover responsive className="custom-table align-middle mb-0">
               <thead>
@@ -171,10 +186,11 @@ const ProductManager = () => {
                             <td className="ps-4">
                                 <div className="d-flex align-items-center gap-3">
                                     <img 
-                                        src={item.images?.[0]?.imageUrl || 'https://via.placeholder.com/50'} 
+                                        src={item.images?.[0]?.imageUrl || 'https://placehold.co/50'} 
                                         alt={item.name} 
                                         className="rounded-3 border object-fit-cover" 
                                         style={{width: 50, height: 50}}
+                                        onError={(e) => e.target.src = 'https://placehold.co/50'} // Fallback nếu ảnh lỗi
                                     />
                                     <div>
                                         <div className="fw-bold text-truncate" style={{maxWidth: '200px', color: 'var(--admin-text)'}}>{item.name}</div>
@@ -191,9 +207,11 @@ const ProductManager = () => {
                                 {item.price_cents?.toLocaleString()} đ
                             </td>
                             <td>
-                                {/* Tính tổng stock từ variants nếu có */}
                                 <div className="fw-bold">
-                                    {item.variants?.reduce((sum, v) => sum + v.stock, 0) || 0}
+                                    {/* Logic hiển thị stock */}
+                                    {item.variants?.length > 0 
+                                        ? item.variants.reduce((sum, v) => sum + v.stock, 0) 
+                                        : (item.stock || 0)}
                                 </div>
                             </td>
                             <td className="text-end pe-4">
@@ -219,7 +237,7 @@ const ProductManager = () => {
               </tbody>
           </Table>
           
-          {/* PAGINATION (Giữ nguyên như cũ) */}
+          {/* Pagination */}
           {totalPages > 1 && (
               <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
                   <Pagination className="eco-pagination mb-2">
@@ -237,12 +255,12 @@ const ProductManager = () => {
 
       {/* MODAL */}
       <ProductModal 
-        key={showModal ? (editingProduct ? editingProduct._id : 'new') : 'closed'}
-        show={showModal} 
-        handleClose={() => setShowModal(false)} 
+        key={showCreateModal ? 'new' : (editId || 'closed')} // Key thay đổi để reset form
+        show={showCreateModal || showEditModal} 
+        handleClose={handleCloseModal} 
         product={editingProduct} 
         onSave={handleSave}
-        categories={categories} // Truyền danh mục xuống Modal
+        categories={categories}
       />
     </div>
   );

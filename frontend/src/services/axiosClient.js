@@ -8,6 +8,18 @@ const axiosClient = axios.create({
   },
 });
 
+axiosClient.interceptors.request.use(async (config) => {
+    // Lấy token từ localStorage (hoặc nơi bạn lưu token khi đăng nhập)
+    const token = localStorage.getItem('token'); 
+    
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
 // Interceptor (Bộ đón): Xử lý dữ liệu trước khi trả về cho Component
 axiosClient.interceptors.response.use(
   (response) => {
@@ -17,7 +29,9 @@ axiosClient.interceptors.response.use(
   },
   (error) => {
     // Nơi xử lý lỗi chung (VD: Hết hạn token thì logout)
-    console.error("API Error:", error?.response?.data || error.message);
+    if (error.response) {
+        console.error("API Error:", error.response.data);
+    }
     return Promise.reject(error);
   }
 );
