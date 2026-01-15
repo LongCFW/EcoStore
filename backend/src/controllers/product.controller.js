@@ -1,7 +1,9 @@
 // src/controllers/product.controller.js
 import { 
     getAllProductsService, 
-    createProductService 
+    createProductService,
+    getProductBySlugService,
+    getRelatedProductsService
 } from "../services/product.service.js";
 
 // Lấy danh sách sản phẩm (đã có từ trước)
@@ -75,6 +77,25 @@ export const getProductBySlug = async (req, res, next) => {
             success: true,
             data: product,
             message: "Get product detail successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getRelatedProducts = async (req, res, next) => {
+    try {
+        const { categoryId, currentProductId } = req.query; // Lấy tham số từ Query String
+
+        if (!categoryId || !currentProductId) {
+            return res.status(400).json({ success: false, message: "Missing params" });
+        }
+
+        const products = await getRelatedProductsService(categoryId, currentProductId);
+
+        res.status(200).json({
+            success: true,
+            data: products,
         });
     } catch (error) {
         next(error);
