@@ -1,40 +1,47 @@
 /* --- PRODUCT CARD STYLES --- */
 .product-card-wrapper {
     position: relative;
-    border-radius: 15px;
+    border-radius: 12px;
     overflow: hidden;
     background: white;
     transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.05) !important;
 }
 
 .product-card-wrapper:hover {
-    box-shadow: 0 15px 30px rgba(46, 125, 50, 0.15);
-    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(46, 125, 50, 0.15);
+    transform: translateY(-3px);
 }
 
 .product-img-container {
     position: relative;
     overflow: hidden;
-    height: 250px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
 }
 
 .product-img-container img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
     transition: transform 0.5s ease;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .product-card-wrapper:hover .product-img-container img {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 
 /* Lớp phủ chứa nút bấm (Action Overlay) */
 .card-actions-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.2);
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     display: flex;
@@ -54,7 +61,7 @@
 /* Nút trong overlay */
 .action-btn {
     background: white;
-    color: var(--eco-primary);
+    color: #2e7d32; /* Dùng cứng mã màu để tránh lỗi nếu var chưa load */
     border: none;
     padding: 8px 20px;
     border-radius: 30px;
@@ -63,7 +70,7 @@
     width: 140px;
     transition: all 0.2s ease;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    text-decoration: none; /* Cho thẻ Link */
+    text-decoration: none;
     text-align: center;
     display: flex; 
     align-items: center; 
@@ -72,12 +79,12 @@
 }
 
 .action-btn:hover {
-    background: var(--gradient-main);
+    background: linear-gradient(135deg, #43a047 0%, #1de9b6 100%);
     color: white;
     transform: scale(1.05);
 }
 
-/* --- SIDEBAR FILTER (Glassy) --- */
+/* --- SIDEBAR FILTER --- */
 .filter-sidebar {
     background: #ffffff;
     border-radius: 16px;
@@ -88,7 +95,7 @@
 
 .filter-group-title {
     font-weight: 700;
-    color: var(--eco-dark);
+    color: #1b5e20;
     margin-bottom: 15px;
     display: flex;
     justify-content: space-between;
@@ -105,40 +112,80 @@
 }
 
 .filter-item:hover {
-    color: var(--eco-primary);
+    color: #2e7d32;
 }
 
-/* Custom Checkbox */
 .form-check-input:checked {
-    background-color: var(--eco-primary);
-    border-color: var(--eco-primary);
+    background-color: #2e7d32;
+    border-color: #2e7d32;
 }
 
-/* --- PAGINATION --- */
+/* --- PAGINATION  --- */
+
+.eco-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Căn giữa toàn bộ thanh phân trang */
+    margin-top: 2rem;
+}
+
 .eco-pagination .page-link {
-    color: var(--eco-primary);
-    border: none;
-    background: transparent;
+    color: #2e7d32 !important; /* Chữ xanh */
+    background-color: #0ae315 !important; /* Nền trắng */
+    border: 1px solid #000000 !important;
     font-weight: 600;
     width: 40px;
     height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 50% !important;
     margin: 0 5px;
-    transition: all 0.2s;
+    cursor: pointer;
+    box-shadow: none !important;
+    text-decoration: none !important;
 }
 
-.eco-pagination .page-item.active .page-link {
-    background: var(--gradient-main);
-    color: white;
-    box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
-}
-
+/* State Hover */
 .eco-pagination .page-link:hover {
-    background: rgba(76, 175, 80, 0.1);
-    color: var(--eco-dark);
+    background-color: #12771b !important; /* Xanh nhạt */
+    color: #e2e7e2 !important;
+    border-color: #2e7d32 !important;
+}
+
+/* State Active (Trang đang chọn - Fix màu trắng chữ) */
+.eco-pagination .page-item.active .page-link {
+    background-color: #08370a !important; /* NỀN XANH */
+    color: #f30606 !important; /* CHỮ TRẮNG */
+    border-color: #2e7d32 !important;
+    box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3) !important;
+}
+
+/* Fix lỗi visited link */
+.eco-pagination .page-link:visited {
+    color: #2e7d32;
+}
+.eco-pagination .page-item.active .page-link:visited {
+    color: #ffffff !important;
+}
+
+/* Disable state */
+.eco-pagination .page-item.disabled .page-link {
+    color: #6c757d !important;
+    background-color: #074316 !important;
+    border-color: #dee2e6 !important;
+    opacity: 0.6;
+}
+
+/* --- FIX CĂN GIỮA "KHÔNG TÌM THẤY SẢN PHẨM" --- */
+/* Class này tự động áp dụng cho các Col text-center */
+.text-center.py-5.text-muted {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%; /* Bắt buộc chiếm hết chiều rộng để căn giữa */
+    min-height: 200px;
 }
 
 /* --- DETAIL PAGE --- */
@@ -148,7 +195,7 @@
     transition: all 0.2s;
 }
 .product-gallery-thumb.active {
-    border-color: var(--eco-primary);
+    border-color: #2e7d32;
 }
 
 .price-tag-detail {
@@ -156,18 +203,15 @@
     padding: 10px 20px;
     border-radius: 10px;
     display: inline-block;
-    color: var(--eco-primary);
+    color: #2e7d32;
 }
 
 /* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    /* Trên mobile, overlay hiện nút bấm luôn hoặc dùng icon nhỏ góc */
-    /* Ở đây ta giữ logic hover cho desktop, mobile click vào ảnh sẽ vào detail */
     .card-actions-overlay {
-        display: none; /* Tạm ẩn overlay trên mobile để đỡ rối, click thẳng vào ảnh */
+        display: none;
     }
-    
     .filter-sidebar {
-        border-radius: 0; /* Cho Offcanvas */
+        border-radius: 0;
     }
 }
