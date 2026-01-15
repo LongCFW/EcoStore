@@ -2,6 +2,7 @@ import express from "express";
 import {
     getAllProducts,
     getProductBySlug,
+    getRelatedProducts
 } from "../controllers/product.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
@@ -13,7 +14,8 @@ const router = express.Router();
 
 // GET /api/products
 router.get("/", getAllProducts);
-
+// GET /api/products/related?categoryId=...&currentProductId=...
+router.get("/related", getRelatedProducts);
 // GET /api/products/:slug
 router.get("/:slug", getProductBySlug);
 
