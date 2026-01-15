@@ -42,3 +42,18 @@ export const getRelatedProductsService = async (categoryId, currentProductId) =>
     .limit(4) // Chỉ lấy 4 sản phẩm
     .populate("categoryId", "_id name slug"); // Populate để lấy thông tin đẹp
 };
+
+// --- UPDATE PRODUCT ---
+export const updateProductService = async (id, data) => {
+    // Tìm và update, trả về dữ liệu mới sau khi update
+    const updatedProduct = await Product.findByIdAndUpdate(id, data, { new: true });
+    if (!updatedProduct) throw new Error("Product not found");
+    return updatedProduct;
+};
+
+// --- DELETE PRODUCT ---
+export const deleteProductService = async (id) => {
+    const deletedProduct = await Product.findByIdAndDelete(id);
+    if (!deletedProduct) throw new Error("Product not found");
+    return deletedProduct;
+};

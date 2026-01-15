@@ -2,7 +2,9 @@ import express from "express";
 import {
     getAllProducts,
     getProductBySlug,
-    getRelatedProducts
+    getRelatedProducts,
+    updateProduct,
+    deleteProduct
 } from "../controllers/product.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
@@ -40,5 +42,22 @@ router.post(
   ],
   validateRequest,
   createProduct
+);
+
+// PUT /api/products/:id (Sửa)
+router.put(
+    "/:id",
+    authMiddleware,
+    requireRole(["admin"]),
+    validateRequest, // Có thể thêm body validation nếu cần
+    updateProduct
+);
+
+// DELETE /api/products/:id (Xóa)
+router.delete(
+    "/:id",
+    authMiddleware,
+    requireRole(["admin"]),
+    deleteProduct
 );
 export default router;

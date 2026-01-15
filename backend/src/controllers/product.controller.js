@@ -3,7 +3,9 @@ import {
     getAllProductsService, 
     createProductService,
     getProductBySlugService,
-    getRelatedProductsService
+    getRelatedProductsService,
+    updateProductService, 
+    deleteProductService
 } from "../services/product.service.js";
 
 // Lấy danh sách sản phẩm (đã có từ trước)
@@ -97,6 +99,29 @@ export const getRelatedProducts = async (req, res, next) => {
             success: true,
             data: products,
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+// --- UPDATE ---
+export const updateProduct = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const product = await updateProductService(id, req.body);
+        res.status(200).json({ success: true, data: product, message: "Update success" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- DELETE ---
+export const deleteProduct = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        await deleteProductService(id);
+        res.status(200).json({ success: true, message: "Delete success" });
     } catch (error) {
         next(error);
     }

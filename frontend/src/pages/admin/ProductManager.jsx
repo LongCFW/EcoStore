@@ -1,71 +1,102 @@
-import React, { useState } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination, Spinner } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaEdit, FaTrash, FaFilter, FaBox } from 'react-icons/fa';
 import ProductModal from '../../components/admin/ProductModal';
+import productApi from '../../services/product.service'; // Import API
+import categoryApi from '../../services/category.service'; // Import Category API
 import '../../assets/styles/admin.css';
 
 const ProductManager = () => {
-  // 1. GENERATE MOCK DATA (25 SẢN PHẨM)
-  const [products, setProducts] = useState(() => {
-      const data = [];
-      const categories = ["Rau củ", "Trái cây", "Đồ gia dụng", "Thời trang", "Mỹ phẩm"];
-      const names = ["Bàn chải tre", "Cà chua bi", "Túi vải Canvas", "Xà phòng", "Hạt Granola"];
-      
-      for (let i = 1; i <= 25; i++) {
-          data.push({
-              id: i,
-              name: `${names[i % 5]} Eco ${i}`,
-              category: categories[i % 5],
-              price: 50000 + (i * 1000),
-              salePrice: i % 3 === 0 ? 45000 + (i * 1000) : null,
-              stock: i % 4 === 0 ? 0 : 20 + i,
-              image: `https://via.placeholder.com/150?text=Product+${i}`, // Hoặc link ảnh thật
-              status: i % 4 === 0 ? 'out_stock' : 'active'
-          });
-      }
-      return data;
-  });
-
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]); // Lưu danh sách danh mục để truyền vào Modal
+  const [loading, setLoading] = useState(true);
+  
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
 
-  // --- PAGINATION STATE ---
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // --- LOGIC XỬ LÝ ---
-  const handleEdit = (product) => {
-    setEditingProduct(product);
-    setShowModal(true);
+  // --- 1. LOAD DATA TỪ API ---
+  useEffect(() => {
+      fetchData();
+  }, []);
+
+  const fetchData = async () => {
+      try {
+          setLoading(true);
+          // Gọi song song 2 API: Lấy sản phẩm và Lấy danh mục
+          const [prodRes, catRes] = await Promise.all([
+              productApi.getAll(),
+              categoryApi.getAll()
+          ]);
+          
+          setProducts(prodRes.data || []);
+          setCategories(catRes.data || []);
+      } catch (error) {
+          console.error("Error fetching data:", error);
+          alert("Lỗi tải dữ liệu. Vui lòng thử lại!");
+      } finally {
+          setLoading(false);
+      }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
-      setProducts(products.filter(p => p.id !== id));
-    }
-  };
-
-  const handleSave = (formData) => {
-    if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...formData } : p));
-    } else {
-      const newProduct = { ...formData, id: Date.now(), status: 'active', image: formData.preview };
-      setProducts([newProduct, ...products]);
-    }
-    setEditingProduct(null);
-  };
-
+  // --- 2. LOGIC CRUD ---
   const handleAddNew = () => {
       setEditingProduct(null);
       setShowModal(true);
-  }
+  };
 
-  // --- FILTER & PAGINATION ---
+  const handleEdit = (product) => {
+      setEditingProduct(product);
+      setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+        try {
+            await productApi.delete(id);
+            // Cập nhật lại UI sau khi xóa thành công
+            setProducts(products.filter(p => p._id !== id));
+            alert("Xóa thành công!");
+        } catch (error) {
+            console.error("Delete error:", error);
+            alert("Xóa thất bại!");
+        }
+    }
+  };
+
+  const handleSave = async (formData) => {
+    try {
+        if (editingProduct) {
+            // --- UPDATE ---
+            const res = await productApi.update(formData.id, formData);
+            // Cập nhật state list (Thay thế item cũ bằng item mới từ server trả về)
+            setProducts(products.map(p => p._id === formData.id ? res.data.data : p));
+            alert("Cập nhật thành công!");
+        } else {
+            // --- CREATE ---
+            const res = await productApi.create(formData);
+            // Thêm item mới vào đầu danh sách
+            setProducts([res.data.data, ...products]);
+            alert("Thêm mới thành công!");
+        }
+    } catch (error) {
+        console.error("Save error:", error);
+        alert("Lưu thất bại! Kiểm tra lại thông tin.");
+    }
+  };
+
+  // --- 3. FILTER & PAGINATION (Client-side) ---
   const filteredProducts = products.filter(item => {
       const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchCategory = filterCategory === 'All' || item.category === filterCategory;
+      // Lọc theo Category ID hoặc Name tùy backend trả về gì
+      // Ở đây giả sử item.categoryId là object populated
+      const catName = typeof item.categoryId === 'object' ? item.categoryId.name : "";
+      const matchCategory = filterCategory === 'All' || catName === filterCategory;
       return matchSearch && matchCategory;
   });
 
@@ -75,16 +106,6 @@ const ProductManager = () => {
   const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
-
-  const handleSearchChange = (e) => {
-      setSearchTerm(e.target.value);
-      setCurrentPage(1);
-  };
-
-  const handleFilterChange = (e) => {
-      setFilterCategory(e.target.value);
-      setCurrentPage(1);
-  };
 
   return (
     <div className="animate-fade-in">
@@ -107,10 +128,10 @@ const ProductManager = () => {
                       <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
                       <Form.Control 
                         type="text" 
-                        placeholder="Tìm kiếm tên sản phẩm..." 
+                        placeholder="Tìm kiếm..." 
                         className="border-start-0 shadow-none"
                         value={searchTerm}
-                        onChange={handleSearchChange}
+                        onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
                       />
                   </InputGroup>
               </Col>
@@ -118,19 +139,13 @@ const ProductManager = () => {
                   <Form.Select 
                     className="shadow-none" 
                     value={filterCategory}
-                    onChange={handleFilterChange}
+                    onChange={(e) => {setFilterCategory(e.target.value); setCurrentPage(1);}}
                   >
                       <option value="All">Tất cả danh mục</option>
-                      <option value="Rau củ">Rau củ</option>
-                      <option value="Trái cây">Trái cây</option>
-                      <option value="Đồ gia dụng">Đồ gia dụng</option>
-                      <option value="Thời trang">Thời trang</option>
+                      {categories.map(cat => (
+                          <option key={cat._id} value={cat.name}>{cat.name}</option>
+                      ))}
                   </Form.Select>
-              </Col>
-              <Col md={2}>
-                  <Button variant="outline-secondary" className="w-100 d-flex align-items-center justify-content-center gap-2">
-                      <FaFilter /> Lọc thêm
-                  </Button>
               </Col>
           </Row>
       </div>
@@ -144,49 +159,49 @@ const ProductManager = () => {
                       <th>Danh Mục</th>
                       <th>Giá Bán</th>
                       <th>Tồn Kho</th>
-                      <th>Trạng Thái</th>
                       <th className="text-end pe-4">Hành Động</th>
                   </tr>
               </thead>
               <tbody>
-                  {currentItems.length > 0 ? (
+                  {loading ? (
+                      <tr><td colSpan="5" className="text-center py-5"><Spinner animation="border" variant="success"/></td></tr>
+                  ) : currentItems.length > 0 ? (
                       currentItems.map((item) => (
-                        <tr key={item.id}>
+                        <tr key={item._id}>
                             <td className="ps-4">
                                 <div className="d-flex align-items-center gap-3">
                                     <img 
-                                        src={item.image} 
+                                        src={item.images?.[0]?.imageUrl || 'https://via.placeholder.com/50'} 
                                         alt={item.name} 
                                         className="rounded-3 border object-fit-cover" 
                                         style={{width: 50, height: 50}}
                                     />
                                     <div>
                                         <div className="fw-bold text-truncate" style={{maxWidth: '200px', color: 'var(--admin-text)'}}>{item.name}</div>
-                                        <small className="text-muted">ID: #SP{item.id}</small>
+                                        <small className="text-muted">SKU: {item.sku || 'N/A'}</small>
                                     </div>
                                 </div>
                             </td>
-                            <td><Badge bg="light" text="dark" className="border">{item.category}</Badge></td>
                             <td>
-                                <div className="fw-bold text-success">{item.salePrice ? item.salePrice.toLocaleString() : item.price.toLocaleString()} đ</div>
-                                {item.salePrice && <small className="text-muted text-decoration-line-through">{item.price.toLocaleString()} đ</small>}
+                                <Badge bg="light" text="dark" className="border">
+                                    {typeof item.categoryId === 'object' ? item.categoryId.name : 'N/A'}
+                                </Badge>
+                            </td>
+                            <td className="fw-bold text-success">
+                                {item.price_cents?.toLocaleString()} đ
                             </td>
                             <td>
-                                <div className="fw-bold">{item.stock}</div>
-                            </td>
-                            <td>
-                                {item.stock > 0 ? (
-                                    <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Còn hàng</span>
-                                ) : (
-                                    <span className="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">Hết hàng</span>
-                                )}
+                                {/* Tính tổng stock từ variants nếu có */}
+                                <div className="fw-bold">
+                                    {item.variants?.reduce((sum, v) => sum + v.stock, 0) || 0}
+                                </div>
                             </td>
                             <td className="text-end pe-4">
                                 <div className="d-flex justify-content-end gap-2">
                                     <Button variant="light" size="sm" className="rounded-circle border shadow-sm text-primary hover-scale" onClick={() => handleEdit(item)}>
                                         <FaEdit />
                                     </Button>
-                                    <Button variant="light" size="sm" className="rounded-circle border shadow-sm text-danger hover-scale" onClick={() => handleDelete(item.id)}>
+                                    <Button variant="light" size="sm" className="rounded-circle border shadow-sm text-danger hover-scale" onClick={() => handleDelete(item._id)}>
                                         <FaTrash />
                                     </Button>
                                 </div>
@@ -195,52 +210,39 @@ const ProductManager = () => {
                       ))
                   ) : (
                       <tr>
-                          <td colSpan="6" className="text-center py-5 text-muted">
+                          <td colSpan="5" className="text-center py-5 text-muted">
                               <FaBox size={40} className="mb-3 opacity-50"/><br/>
-                              Không tìm thấy sản phẩm nào.
+                              Không tìm thấy dữ liệu.
                           </td>
                       </tr>
                   )}
               </tbody>
           </Table>
           
-          {/* PAGINATION */}
+          {/* PAGINATION (Giữ nguyên như cũ) */}
           {totalPages > 1 && (
               <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
                   <Pagination className="eco-pagination mb-2">
-                      <Pagination.Prev 
-                        onClick={() => handlePageChange(currentPage - 1)} 
-                        disabled={currentPage === 1}
-                      />
+                      <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}/>
                       {[...Array(totalPages)].map((_, idx) => (
-                          <Pagination.Item 
-                            key={idx + 1} 
-                            active={idx + 1 === currentPage}
-                            onClick={() => handlePageChange(idx + 1)}
-                          >
+                          <Pagination.Item key={idx + 1} active={idx + 1 === currentPage} onClick={() => handlePageChange(idx + 1)}>
                               {idx + 1}
                           </Pagination.Item>
                       ))}
-                      <Pagination.Next 
-                        onClick={() => handlePageChange(currentPage + 1)} 
-                        disabled={currentPage === totalPages}
-                      />
+                      <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}/>
                   </Pagination>
-                  
-                  <small className="text-muted">
-                      Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredProducts.length)} trên tổng số {filteredProducts.length} sản phẩm
-                  </small>
               </div>
           )}
       </div>
 
       {/* MODAL */}
       <ProductModal 
-        key={showModal ? (editingProduct ? editingProduct.id : 'new') : 'closed'}
+        key={showModal ? (editingProduct ? editingProduct._id : 'new') : 'closed'}
         show={showModal} 
         handleClose={() => setShowModal(false)} 
         product={editingProduct} 
-        onSave={handleSave} 
+        onSave={handleSave}
+        categories={categories} // Truyền danh mục xuống Modal
       />
     </div>
   );

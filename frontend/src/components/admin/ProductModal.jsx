@@ -1,29 +1,35 @@
-import React, { useState, useRef } from 'react'; // Bỏ useEffect
-import { Modal, Button, Form, Row, Col, InputGroup, Badge } from 'react-bootstrap';
-import { FaCloudUploadAlt, FaSave, FaTimes, FaDollarSign, FaBoxOpen } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
+import { FaSave, FaTimes, FaDollarSign, FaBoxOpen, FaImage } from 'react-icons/fa';
 
 // Giá trị mặc định
 const DEFAULT_VALUES = {
     name: '',
-    category: 'Rau củ',
-    price: '',
-    salePrice: '',
+    category: '', // Để trống để bắt buộc chọn
+    price_cents: '', // Đổi tên field cho khớp Backend (price -> price_cents)
+    salePrice: '',   // Cần map sang compareAtPriceCents nếu backend dùng tên đó
     stock: '',
     description: '',
-    image: null,
-    preview: 'https://via.placeholder.com/300x300?text=Upload+Image'
+    // Thay đổi logic ảnh: lưu mảng images chứa object { imageUrl: ... }
+    imageUrl: '', // Dùng tạm state này để bind vào input URL
+    preview: 'https://via.placeholder.com/300x300?text=No+Image'
 };
 
-const ProductModal = ({ show, handleClose, product, onSave }) => {
-  const fileInputRef = useRef(null);
-
-  // KHỞI TẠO STATE TRỰC TIẾP TỪ PROPS (Không cần useEffect)
-  // Khi key thay đổi, component remount, state sẽ được tính toán lại từ đầu
+const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) => {
+  // Init State
   const [formData, setFormData] = useState(() => {
       if (product) {
+          // Map dữ liệu từ Product (Backend) vào Form
           return {
-              ...product,
-              preview: product.image || DEFAULT_VALUES.preview
+              name: product.name,
+              category: typeof product.categoryId === 'object' ? product.categoryId._id : product.categoryId,
+              price_cents: product.price_cents,
+              // Nếu backend chưa có salePrice, tạm để trống hoặc lấy từ compareAtPriceCents
+              stock: product.variants?.[0]?.stock || 100, // Tạm lấy stock
+              description: product.description || '',
+              // Lấy ảnh đầu tiên ra hiển thị
+              imageUrl: product.images?.[0]?.imageUrl || '',
+              preview: product.images?.[0]?.imageUrl || DEFAULT_VALUES.preview
           };
       }
       return DEFAULT_VALUES;
@@ -33,25 +39,46 @@ const ProductModal = ({ show, handleClose, product, onSave }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setFormData({ ...formData, image: file, preview: url });
-    }
+  // Xử lý khi nhập URL ảnh (Hiển thị preview ngay)
+  const handleUrlChange = (e) => {
+      const url = e.target.value;
+      setFormData({ 
+          ...formData, 
+          imageUrl: url,
+          preview: url || DEFAULT_VALUES.preview 
+      });
   };
 
   const handleSubmit = () => {
-    if (!formData.name) {
-        alert("Vui lòng nhập tên sản phẩm!");
+    if (!formData.name || !formData.price_cents || !formData.category) {
+        alert("Vui lòng điền tên, danh mục và giá!");
         return;
     }
     
-    onSave({
-        ...formData,
-        id: product ? product.id : undefined
-    });
+    // Chuẩn bị dữ liệu gửi về (Map lại cho đúng Schema Backend)
+    const payload = {
+        name: formData.name,
+        categoryId: formData.category, // Backend cần categoryId
+        price_cents: Number(formData.price_cents),
+        description: formData.description,
+        // Tạo cấu trúc images chuẩn Schema
+        images: formData.imageUrl ? [{ imageUrl: formData.imageUrl }] : [],
+        // Tạm thời hardcode brand để backend không lỗi validation (nếu có)
+        brand: "EcoStore", 
+        // Backend đang dùng variants để lưu stock, ta cần xử lý tạm
+        // Hoặc nếu backend đã bỏ variants bắt buộc thì ok.
+        // Giả sử backend tự xử lý hoặc ta gửi variants ảo:
+        variants: [{ 
+            name: "Default", 
+            price_cents: Number(formData.price_cents),
+            stock: Number(formData.stock) || 0 
+        }]
+    };
     
+    // Gửi kèm ID nếu là sửa
+    if (product) payload.id = product.id || product._id;
+
+    onSave(payload);
     handleClose();
   };
 
@@ -66,32 +93,27 @@ const ProductModal = ({ show, handleClose, product, onSave }) => {
       
       <Modal.Body className="p-4 custom-scrollbar">
         <Row>
-            {/* CỘT TRÁI: ẢNH */}
+            {/* CỘT TRÁI: ẢNH (NHẬP URL) */}
             <Col xs={12} md={4} className="text-center mb-4 mb-md-0">
-                <div 
-                    className="position-relative rounded-4 overflow-hidden border border-2 border-dashed border-success bg-light d-flex align-items-center justify-content-center mx-auto"
-                    style={{ height: '250px', width: '100%', maxWidth: '300px', cursor: 'pointer' }}
-                    onClick={() => fileInputRef.current.click()}
-                >
-                    <img 
-                        src={formData.preview} 
-                        alt="Preview" 
-                        className="w-100 h-100 object-fit-cover" 
-                        style={{opacity: (formData.image || (product && product.image)) ? 1 : 0.6}}
-                    />
-                    
-                    <div className="position-absolute top-50 start-50 translate-middle text-center w-100 p-2" style={{pointerEvents: 'none', display: (formData.preview !== DEFAULT_VALUES.preview) ? 'none' : 'block'}}>
-                        <FaCloudUploadAlt size={40} className="text-success mb-2"/>
-                        <p className="small text-muted fw-bold m-0">Nhấn để tải ảnh lên</p>
-                    </div>
+                <div className="rounded-4 overflow-hidden border bg-light mb-3 mx-auto" style={{ height: '250px', width: '100%', maxWidth: '300px' }}>
+                    <img src={formData.preview} alt="Preview" className="w-100 h-100 object-fit-cover" 
+                         onError={(e) => e.target.src = DEFAULT_VALUES.preview}/>
                 </div>
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleImageChange} 
-                    style={{display: 'none'}} 
-                    accept="image/*"
-                />
+                <Form.Group>
+                    <Form.Label className="admin-label small">URL Hình ảnh</Form.Label>
+                    <InputGroup size="sm">
+                        <InputGroup.Text><FaImage/></InputGroup.Text>
+                        <Form.Control 
+                            type="text" 
+                            placeholder="Paste link ảnh vào đây..." 
+                            value={formData.imageUrl}
+                            onChange={handleUrlChange}
+                        />
+                    </InputGroup>
+                    <Form.Text className="text-muted small">
+                        Copy link ảnh từ internet và dán vào đây.
+                    </Form.Text>
+                </Form.Group>
             </Col>
 
             {/* CỘT PHẢI: FORM */}
@@ -100,28 +122,19 @@ const ProductModal = ({ show, handleClose, product, onSave }) => {
                     <Row className="g-3">
                         <Col xs={12}>
                             <Form.Group>
-                                <Form.Label className="admin-label">Tên sản phẩm</Form.Label>
-                                <Form.Control 
-                                    type="text" name="name" 
-                                    value={formData.name} onChange={handleChange} 
-                                    className="admin-input" placeholder="Nhập tên sản phẩm..."
-                                />
+                                <Form.Label className="admin-label">Tên sản phẩm <span className="text-danger">*</span></Form.Label>
+                                <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} className="admin-input" placeholder="Nhập tên sản phẩm..." />
                             </Form.Group>
                         </Col>
 
                         <Col xs={12} sm={6}>
                             <Form.Group>
-                                <Form.Label className="admin-label">Danh mục</Form.Label>
-                                <Form.Select 
-                                    name="category" 
-                                    value={formData.category} onChange={handleChange} 
-                                    className="admin-input"
-                                >
-                                    <option>Rau củ</option>
-                                    <option>Trái cây</option>
-                                    <option>Đồ uống</option>
-                                    <option>Đồ gia dụng</option>
-                                    <option>Hạt & Ngũ cốc</option>
+                                <Form.Label className="admin-label">Danh mục <span className="text-danger">*</span></Form.Label>
+                                <Form.Select name="category" value={formData.category} onChange={handleChange} className="admin-input">
+                                    <option value="">-- Chọn danh mục --</option>
+                                    {categories.map(cat => (
+                                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                    ))}
                                 </Form.Select>
                             </Form.Group>
                         </Col>
@@ -131,39 +144,17 @@ const ProductModal = ({ show, handleClose, product, onSave }) => {
                                 <Form.Label className="admin-label">Tồn kho</Form.Label>
                                 <InputGroup>
                                     <InputGroup.Text className="bg-light border-end-0"><FaBoxOpen className="text-muted"/></InputGroup.Text>
-                                    <Form.Control 
-                                        type="number" name="stock" 
-                                        value={formData.stock} onChange={handleChange} 
-                                        className="admin-input border-start-0 ps-0" placeholder="0"
-                                    />
+                                    <Form.Control type="number" name="stock" value={formData.stock} onChange={handleChange} className="admin-input border-start-0 ps-0" placeholder="0" />
                                 </InputGroup>
                             </Form.Group>
                         </Col>
 
                         <Col xs={12} sm={6}>
                             <Form.Group>
-                                <Form.Label className="admin-label">Giá gốc</Form.Label>
+                                <Form.Label className="admin-label">Giá bán (VNĐ) <span className="text-danger">*</span></Form.Label>
                                 <InputGroup>
                                     <InputGroup.Text className="bg-light border-end-0"><FaDollarSign className="text-muted"/></InputGroup.Text>
-                                    <Form.Control 
-                                        type="number" name="price" 
-                                        value={formData.price} onChange={handleChange} 
-                                        className="admin-input border-start-0 ps-0" placeholder="0"
-                                    />
-                                </InputGroup>
-                            </Form.Group>
-                        </Col>
-
-                        <Col xs={12} sm={6}>
-                            <Form.Group>
-                                <Form.Label className="admin-label">Giá khuyến mãi</Form.Label>
-                                <InputGroup>
-                                    <InputGroup.Text className="bg-light border-end-0 text-danger"><FaDollarSign/></InputGroup.Text>
-                                    <Form.Control 
-                                        type="number" name="salePrice" 
-                                        value={formData.salePrice} onChange={handleChange} 
-                                        className="admin-input border-start-0 ps-0" placeholder="0"
-                                    />
+                                    <Form.Control type="number" name="price_cents" value={formData.price_cents} onChange={handleChange} className="admin-input border-start-0 ps-0" placeholder="0" />
                                 </InputGroup>
                             </Form.Group>
                         </Col>
@@ -171,11 +162,7 @@ const ProductModal = ({ show, handleClose, product, onSave }) => {
                         <Col xs={12}>
                             <Form.Group>
                                 <Form.Label className="admin-label">Mô tả ngắn</Form.Label>
-                                <Form.Control 
-                                    as="textarea" rows={3} name="description" 
-                                    value={formData.description} onChange={handleChange} 
-                                    className="admin-input" placeholder="Mô tả sản phẩm..."
-                                />
+                                <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} className="admin-input" placeholder="Mô tả sản phẩm..." />
                             </Form.Group>
                         </Col>
                     </Row>
