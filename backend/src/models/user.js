@@ -12,11 +12,6 @@ const AddressSchema = new Schema({
     isDefault: Boolean
 }, { _id: false });
 
-const CartItemSchema = new Schema({
-    variantId: Schema.Types.ObjectId,
-    quantity: Number
-}, { _id: false });
-
 const UserSchema = new Schema({
     email: { type: String, unique: true },
     password_hash: String,
@@ -27,8 +22,7 @@ const UserSchema = new Schema({
     role: { type: Schema.Types.ObjectId, ref: "Role" },
     status: { type: Number, default: 1 },
 
-    addresses: [AddressSchema],
-    cart: [CartItemSchema],
+    addresses: [AddressSchema],    
     wishlist: [{ type: Schema.Types.ObjectId }],
 
     googleId: String,

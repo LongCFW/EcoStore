@@ -4,6 +4,7 @@ const { Schema } = mongoose;
 
 const CartItemSchema = new Schema({
     productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    variantId: { type: Schema.Types.ObjectId, required: true },
     quantity: { type: Number, required: true, min: 1 },
     // Có thể thêm giá tại thời điểm thêm vào giỏ nếu muốn giữ giá cố định
     // price: Number 

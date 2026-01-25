@@ -5,7 +5,7 @@ import Product from "../models/product.js";
 export const getCartService = async (userId) => {
     // Tìm giỏ hàng và hiển thị chi tiết thông tin sản phẩm (name, price, image)
     let cart = await Cart.findOne({ userId }).populate("items.productId", "name price_cents images slug");
-    
+
     // Nếu chưa có giỏ hàng, tạo một cái rỗng để trả về (tránh lỗi null ở frontend)
     if (!cart) {
         cart = await Cart.create({ userId, items: [] });
@@ -18,6 +18,13 @@ export const addToCartService = async (userId, productId, quantity = 1) => {
     // 1. Kiểm tra sản phẩm có tồn tại không
     const product = await Product.findById(productId);
     if (!product) throw new Error("Product not found");
+
+   // Tự động lấy biến thể đầu tiên (mặc định)
+    if (!product.variants || product.variants.length === 0) {
+        throw new Error("Product has no variant info");
+    }
+    const defaultVariant = product.variants[0]; 
+    const variantId = defaultVariant._id;
 
     // 2. Tìm giỏ hàng của user
     let cart = await Cart.findOne({ userId });
@@ -35,9 +42,10 @@ export const addToCartService = async (userId, productId, quantity = 1) => {
         if (itemIndex > -1) {
             // SP đã có -> Cộng dồn số lượng
             cart.items[itemIndex].quantity += quantity;
+            cart.items[itemIndex].variantId = variantId;
         } else {
             // SP chưa có -> Thêm mới vào mảng
-            cart.items.push({ productId, quantity });
+            cart.items.push({ productId, variantId, quantity });
         }
         await cart.save();
     }
