@@ -33,7 +33,7 @@ const ProductFilter = ({ onFilter, onReset, availableBrands = [], initialFilters
   useEffect(() => {
       const fetchCategories = async () => {
           try {
-              const response = await categoryApi.getAll();
+              const response = await categoryApi.getAll({ params: { is_active: true } });
               const list = response.categories || response.data || [];
               setCategories(list);
           } catch (error) {

@@ -20,8 +20,21 @@ export const createProductService = async (data) => {
 
 // Chúng ta cũng cần hàm lấy danh sách sản phẩm để tí nữa test
 export const getAllProductsService = async () => {
-    return await Product.find()
-        .populate("categoryId", "_id name slug") // Lấy thêm tên và slug của danh mục để hiển thị cho đẹp
+    // 1. LOGIC ẨN SẢN PHẨM KHI DANH MỤC BỊ ẨN
+    // Tìm ID của các danh mục đang set isActive: false
+    const hiddenCategories = await Category.find({ isActive: false }).select('_id');
+    const hiddenIds = hiddenCategories.map(c => c._id);
+
+    // Tạo query: Nếu có danh mục ẩn thì loại bỏ sản phẩm thuộc danh mục đó
+    const query = {};
+    if (hiddenIds.length > 0) {
+        query.categoryId = { $nin: hiddenIds }; // $nin = Không nằm trong
+    }
+
+    // 2. LẤY DỮ LIỆU (Trả về Array như cũ)
+    // Không dùng .limit() hay .skip() để Frontend tự xử lý phân trang
+    return await Product.find(query)
+        .populate("categoryId", "_id name slug") // Populate để lấy tên danh mục
         .sort({ createdAt: -1 });
 };
 

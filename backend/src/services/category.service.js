@@ -2,9 +2,14 @@ import Category from "../models/category.js";
 import slugify from "slugify";
 
 // 1. Lấy danh sách
-export const getCategoriesService = async ({ page, limit, search }) => {
+export const getCategoriesService = async ({ page, limit, search, onlyActive }) => {
     const query = search ? { name: { $regex: search, $options: 'i' } } : {};
     
+    // Nếu có cờ active thì chỉ lấy isActive: true
+    if (onlyActive) {
+        query.isActive = true;
+    }
+
     // Pagination
     const skip = (page - 1) * limit;
 

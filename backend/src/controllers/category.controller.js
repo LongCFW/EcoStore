@@ -7,8 +7,8 @@ import {
 
 export const getCategories = async (req, res, next) => {
     try {
-        const { page = 1, limit = 10, search = "" } = req.query;
-        const result = await getCategoriesService({ page, limit, search });
+        const { page = 1, limit = 10, search = "", is_active } = req.query;
+        const result = await getCategoriesService({ page, limit, search,onlyActive: is_active === 'true'});
         res.json(result);
     } catch (error) {
         next(error);

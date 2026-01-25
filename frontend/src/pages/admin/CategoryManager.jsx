@@ -151,7 +151,7 @@ const CategoryManager = () => {
                         className="bg-light rounded border d-flex align-items-center justify-content-center"
                         style={{ width: 45, height: 45 }}
                       >
-                        {cat.image ? (
+                        {cat.imageUrl ? (
                           <img
                             src={cat.imageUrl}
                             alt=""
@@ -245,6 +245,7 @@ const CategoryManager = () => {
 
       {/* MODAL */}
       <CategoryModal
+        key={selectedCategory ? selectedCategory._id : 'create-new'} // <--- THÊM DÒNG NÀY
         show={showModal}
         handleClose={() => setShowModal(false)}
         category={selectedCategory}
