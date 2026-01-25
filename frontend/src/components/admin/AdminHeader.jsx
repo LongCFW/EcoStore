@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Dropdown, Button } from 'react-bootstrap';
-import { FaBars, FaSearch, FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaHome } from 'react-icons/fa'; // Thêm FaHome
+import { FaBars, FaSearch, FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaHome } from 'react-icons/fa'; 
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminTheme } from '../../context/useAdminTheme';
 import { Link } from 'react-router-dom';
@@ -9,8 +9,13 @@ const AdminHeader = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useAdminTheme();
 
-  // Ảnh demo người thật để test hình tròn
+  // Ảnh demo fallback nếu user chưa có ảnh
   const demoAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
+  
+  // Dữ liệu hiển thị (Lấy từ user thật)
+  const displayName = user?.name || "Admin User";
+  const displayRole = user?.role || "Administrator";
+  const displayAvatar = user?.avatarUrl || demoAvatar; // Quan trọng: avatarUrl
 
   return (
     <header className="admin-header">
@@ -44,7 +49,7 @@ const AdminHeader = ({ toggleSidebar }) => {
       {/* 3. Right: Actions */}
       <div className="d-flex align-items-center gap-3">
         
-        {/* NÚT VỀ TRANG CHỦ (MỚI THÊM) */}
+        {/* NÚT VỀ TRANG CHỦ */}
         <Link to="/" className="icon-btn text-decoration-none" title="Về trang chủ cửa hàng">
             <FaHome />
         </Link>
@@ -57,15 +62,21 @@ const AdminHeader = ({ toggleSidebar }) => {
         {/* User Dropdown */}
         <Dropdown align="end">
             <Dropdown.Toggle as="div" className="d-flex align-items-center gap-2 border-0 p-0 cursor-pointer" style={{cursor: 'pointer'}}>
-                {/* Class header-avatar đã được CSS fix cứng hình tròn */}
+                {/* Avatar Admin */}
                 <img 
-                    src={user?.avatar || demoAvatar} 
+                    src={displayAvatar} 
                     alt="Admin" 
                     className="header-avatar"
+                    style={{ 
+                        objectFit: 'cover', // <--- FIX MÉO ẢNH
+                        width: '40px',      // Đảm bảo kích thước cố định
+                        height: '40px',
+                        borderRadius: '50%' 
+                    }}
                 />
                 <div className="d-none d-lg-block text-start">
-                    <div className="fw-bold small" style={{color: 'var(--admin-text)'}}>{user?.name || "Admin User"}</div>
-                    <div className="text-muted" style={{fontSize: '0.7rem'}}>{user?.role || "Administrator"}</div>
+                    <div className="fw-bold small" style={{color: 'var(--admin-text)'}}>{displayName}</div>
+                    <div className="text-muted" style={{fontSize: '0.7rem'}}>{displayRole}</div>
                 </div>
             </Dropdown.Toggle>
 
