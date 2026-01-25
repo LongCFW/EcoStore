@@ -4,10 +4,14 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import apiRoutes from "./routes/index.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // 1. CONFIGURATION
 dotenv.config();
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 2. CONNECT DATABASE
 connectDB();
@@ -16,6 +20,9 @@ connectDB();
 // Phải đặt trước Routes để xử lý dữ liệu đầu vào
 app.use(cors());
 app.use(express.json()); // quan trọng: giúp server hiểu JSON từ client
+
+// Cho phép truy cập ảnh từ bên ngoài
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'))); // Tùy cấu trúc thư mục
 
 // 4. ROUTING (Đường đi)
 // Test Route

@@ -24,7 +24,6 @@ const UserSchema = new Schema({
 
     addresses: [AddressSchema],    
     wishlist: [{ type: Schema.Types.ObjectId }],
-
     googleId: String,
     email_Verified: Boolean,
     lastLoginAt: Date,

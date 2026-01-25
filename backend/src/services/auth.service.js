@@ -31,6 +31,7 @@ export const loginService = async (email, password) => {
             id: user._id,
             email: user.email,
             name: user.name,
+            phone: user.phone,
             role: user.role?.name
         }
     };
@@ -67,7 +68,8 @@ export const registerService = async (email, password, name, phone) => {
         id: newUser._id,
         email: newUser.email,
         name: newUser.name,
-        role: "customer"
+        phone: newUser.phone,
+        role: customerRole.name
     };
 };
 

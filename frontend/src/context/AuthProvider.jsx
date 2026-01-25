@@ -58,8 +58,22 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [logout]);
 
+  // Hàm này giúp cập nhật thông tin user ngay lập tức (cho Avatar, Tên, v.v.)
+  const updateUser = useCallback((updatedData) => {
+      setUser((prevUser) => {
+          if (!prevUser) return null;
+          
+          const newUser = { ...prevUser, ...updatedData };
+          
+          // Cập nhật cả LocalStorage để khi F5 không bị mất dữ liệu mới
+          localStorage.setItem('currentUser', JSON.stringify(newUser));
+          
+          return newUser;
+      });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser,loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

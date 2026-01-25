@@ -1,4 +1,5 @@
 import { loginService, registerService, verifyResetService, resetPasswordService } from "../services/auth.service.js";
+import User from "../models/user.js";
 
 export const login = async (req, res, next) => {
     try {
@@ -61,5 +62,62 @@ export const resetPassword = async (req, res, next) => {
     } catch (error) {
         error.statusCode = 400;
         next(error);
+    }
+};
+
+export const updateAvatar = async (req, res) => {
+    try {
+        console.log("--- BẮT ĐẦU UPLOAD ---");
+
+        // 1. Check File
+        if (!req.file) {
+            console.log("Lỗi: Không có file gửi lên");
+            return res.status(400).json({ message: "Vui lòng chọn ảnh" });
+        }
+        console.log("1. File đã nhận:", req.file.filename);
+
+        // 2. Check User ID từ Token
+        console.log("2. User Token Payload:", req.user); // In ra để xem token chứa gì
+        
+        // Kiểm tra xem userId có tồn tại không. 
+        // Lưu ý: Token cũ có thể lưu là 'id', token mới là 'userId'. Check cả 2.
+        const userId = req.user.userId || req.user.id; 
+        
+        if (!userId) {
+            console.log("Lỗi: Không tìm thấy ID trong token");
+            return res.status(401).json({ message: "Token không hợp lệ (Thiếu ID)" });
+        }
+        console.log("3. User ID cần update:", userId);
+
+        // 3. Tạo URL
+        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+        const avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
+        console.log("4. Link ảnh mới:", avatarUrl);
+
+        // 4. Update DB
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { avatarUrl: avatarUrl },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            console.log("Lỗi: Không tìm thấy User trong DB với ID:", userId);
+            return res.status(404).json({ message: "User không tồn tại trong DB" });
+        }
+
+        console.log("5. Update thành công. User mới:", updatedUser.avatarUrl);
+        console.log("--- KẾT THÚC ---");
+
+        res.json({ 
+            success: true, 
+            message: "Upload thành công",
+            avatarUrl: updatedUser.avatarUrl 
+        });
+
+    } catch (error) {
+        // ĐÂY LÀ CHỖ QUAN TRỌNG NHẤT
+        console.error("❌ LỖI NGHIÊM TRỌNG:", error); // Nó sẽ in lỗi đỏ lòm ra terminal
+        res.status(500).json({ message: error.message });
     }
 };

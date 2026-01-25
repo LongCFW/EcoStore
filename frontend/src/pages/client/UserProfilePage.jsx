@@ -8,6 +8,7 @@ import WishlistTab from '../../components/profile/WishlistTab';
 import NotificationTab from '../../components/profile/NotificationTab'; 
 import MyVouchers from '../../components/profile/MyVouchers';
 import '../../assets/styles/auth-profile.css';
+import { useAuth } from '../../hooks/useAuth';
 
 // Component Đổi mật khẩu
 const ChangePassword = () => (
@@ -35,14 +36,14 @@ const ChangePassword = () => (
 
 const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('info');
-
+  const { user } = useAuth();
   const renderContent = () => {
     switch (activeTab) {
-        case 'info': return <ProfileInfo />;
+        case 'info': return <ProfileInfo key={user?.email || 'guest'}/>;
         case 'orders': return <OrderHistory />;
         case 'addresses': return <AddressList />;
         case 'wishlist': return <WishlistTab />; 
-        case 'vouchers': return <MyVouchers />; // (Tạm thời dùng component cũ nếu chưa sửa)
+        case 'vouchers': return <MyVouchers />; 
         case 'notifications': return <NotificationTab />; 
         case 'password': return <ChangePassword />;
         default: return <ProfileInfo />;

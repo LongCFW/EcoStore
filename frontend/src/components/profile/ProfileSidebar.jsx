@@ -1,9 +1,12 @@
 import React from 'react';
 import { ListGroup, Card } from 'react-bootstrap';
 import { FaUser, FaClipboardList, FaMapMarkerAlt, FaLock, FaSignOutAlt, FaHeart, FaBell, FaTicketAlt } from 'react-icons/fa';
+import { useAuth } from '../../hooks/useAuth'; // Import useAuth
 import '../../assets/styles/auth-profile.css';
 
 const ProfileSidebar = ({ activeTab, setActiveTab }) => {
+  const { user, logout } = useAuth(); // Lấy user và hàm logout
+
   const menuItems = [
     { id: 'info', label: 'Thông tin tài khoản', icon: <FaUser /> },
     { id: 'orders', label: 'Quản lý đơn hàng', icon: <FaClipboardList /> },
@@ -14,19 +17,31 @@ const ProfileSidebar = ({ activeTab, setActiveTab }) => {
     { id: 'password', label: 'Đổi mật khẩu', icon: <FaLock /> },
   ];
 
+  // Logic hiển thị an toàn
+  const userName = user?.name || "Khách hàng";
+  const userAvatar = user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80";
+
+  const handleLogout = () => {
+      if(window.confirm("Bạn có chắc muốn đăng xuất?")) {
+          logout();
+      }
+  };
+
   return (
     <div className="profile-sidebar">
       {/* Avatar Section */}
       <div className="text-center py-4 bg-white border-bottom">
         <div className="avatar-container mb-3">
             <img 
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80" 
+                src={userAvatar} 
                 alt="Avatar" 
                 className="avatar-img"
             />
         </div>
-        <h5 className="fw-bold mb-1">Nguyễn Văn A</h5>
-        <span className="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">Thành viên Bạc</span>
+        <h5 className="fw-bold mb-1">{userName}</h5>
+        <span className="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">
+            {user?.role === 'admin' ? 'Quản trị viên' : 'Thành viên'}
+        </span>
       </div>
 
       {/* Menu List */}
@@ -46,11 +61,7 @@ const ProfileSidebar = ({ activeTab, setActiveTab }) => {
 
         <div 
             className="profile-menu-item text-danger"
-            onClick={() => {
-                if(window.confirm("Bạn có chắc muốn đăng xuất?")) {
-                    window.location.href = "/login"; 
-                }
-            }}
+            onClick={handleLogout}
         >
             <span className="fs-5"><FaSignOutAlt /></span>
             <span>Đăng xuất</span>

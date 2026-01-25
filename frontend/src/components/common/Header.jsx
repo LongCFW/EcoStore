@@ -1,31 +1,30 @@
 import React, { useState } from "react";
 import { Navbar, Container, Nav, Form, Button, Badge, Dropdown, Offcanvas } from "react-bootstrap";
-import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart, FaUser } from "react-icons/fa";
+import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
-import { useAuth } from '../../hooks/useAuth';
-
+import { useAuth } from '../../hooks/useAuth'; // Đảm bảo đường dẫn này đúng với cấu trúc dự án của bạn
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Lấy user và hàm logout từ AuthContext
-  const { user, logout } = useAuth(); // <--- SỬ DỤNG HOOK
+  const { user, logout } = useAuth(); 
 
   // Logic kiểm tra login thật sự
-  const isLoggedIn = !!user; // Nếu có user object -> true
-  const userAvatar = user?.avatarUrl || null; // Lấy avatar từ user object (nếu có)
+  const isLoggedIn = !!user; 
+  const userAvatar = user?.avatarUrl; // Lấy avatar từ user object
   const userName = user?.name || "User"; // Lấy tên user
 
   return (
     <>
-      <Navbar expand="lg" className="sticky-top py-3" style={{ zIndex: 1020 }}>
+      <Navbar expand="lg" className="sticky-top py-3" style={{ zIndex: 1020, backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
         <Container>
           {/* 1. LOGO */}
           <Navbar.Brand as={Link} to="/" className="fw-bold fs-3 d-flex align-items-center gap-2 me-lg-5">
             <div className="bg-success bg-opacity-10 p-2 rounded-circle d-flex align-items-center justify-content-center">
                <FaLeaf className="text-success" />
             </div>
-            <span className="text-gradient">EcoStore</span>
+            <span className="text-success">EcoStore</span>
           </Navbar.Brand>
 
           {/* Nút Mobile Menu */}
@@ -82,22 +81,23 @@ const Header = () => {
                         <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-2 border-white">3</Badge>
                     </Link>
 
-                    
-                    {/* --- USER ICON DROPDOWN (SỬA ĐỔI) --- */}
+                    {/* --- USER ICON DROPDOWN (ĐÃ FIX) --- */}
                     <Dropdown align="end">
                         <Dropdown.Toggle variant="transparent" className="p-0 border-0 after-none">
-                            {/* Icon này luôn hiển thị dù login hay chưa */}
-                            <div className="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm user-icon-hover border border-success" style={{width: 42, height: 42}}>
+                            <div className="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm user-icon-hover border border-success overflow-hidden" style={{width: 42, height: 42, padding: 0}}>
                                 {isLoggedIn && userAvatar ? (
-                                    <img src={userAvatar} alt="User" className="rounded-circle w-100 h-100 object-fit-cover" />
+                                    <img 
+                                      src={userAvatar} 
+                                      alt="User" 
+                                      className="w-100 h-100" 
+                                      style={{ objectFit: 'cover' }} // <--- FIX LỖI MÉO ẢNH TẠI ĐÂY
+                                    />
                                 ) : (
-                                    // Dùng icon màu xanh trên nền trắng cho nổi bật
                                     <FaUserCircle size={24} className="text-success"/> 
                                 )}
                             </div>
                         </Dropdown.Toggle>
 
-                        {/* Menu xổ xuống (Giữ nguyên logic cũ) */}
                         <Dropdown.Menu className="border-0 shadow-lg p-2 mt-3 rounded-4 animate-slide-up" style={{minWidth: '240px'}}>
                             {isLoggedIn ? (
                                 <>
@@ -125,9 +125,6 @@ const Header = () => {
                                             <FaUserPlus className="me-2"/> Đăng ký
                                         </Button>
                                     </div>
-                                    {/* Link Profile tạm để test */}
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item as={Link} to="/profile" className="text-center small text-muted">Xem Profile (Demo)</Dropdown.Item>
                                 </>
                             )}
                         </Dropdown.Menu>
@@ -138,7 +135,7 @@ const Header = () => {
         </Container>
       </Navbar>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU - GIỮ NGUYÊN */}
       <Offcanvas show={showMobileMenu} onHide={() => setShowMobileMenu(false)} placement="end" className="border-0 rounded-start-4">
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title className="fw-bold text-success d-flex align-items-center gap-2">
