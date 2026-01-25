@@ -11,6 +11,11 @@ export const loginService = async (email, password) => {
         throw new Error("Invalid email or password");
     }
 
+    // kiểm tra trạng thái của tài khoản
+    if (user.status === 0) {
+        throw new Error("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
         throw new Error("Invalid email or password");

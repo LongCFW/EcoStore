@@ -45,3 +45,17 @@ export const verifyToken = (req, res, next) => {
     res.status(400).json({ success: false, message: "Invalid Token" });
   }
 };
+
+// Middleware kiểm tra quyền Admin
+export const isAdmin = (req, res, next) => {
+    // req.user đã được tạo ra từ verifyToken ở trên
+    // Kiểm tra xem role có phải là 'admin' không
+    if (req.user && req.user.role === 'admin') {
+        next(); // Cho phép đi tiếp
+    } else {
+        return res.status(403).json({ 
+            success: false, 
+            message: "Access denied. Admin resources only." 
+        });
+    }
+};
