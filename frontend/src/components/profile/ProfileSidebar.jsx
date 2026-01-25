@@ -13,8 +13,7 @@ const ProfileSidebar = ({ activeTab, setActiveTab }) => {
     { id: 'addresses', label: 'Sổ địa chỉ', icon: <FaMapMarkerAlt /> },
     { id: 'wishlist', label: 'Sản phẩm yêu thích', icon: <FaHeart /> }, 
     { id: 'vouchers', label: 'Kho Voucher', icon: <FaTicketAlt /> },
-    { id: 'notifications', label: 'Thông báo', icon: <FaBell /> }, 
-    { id: 'password', label: 'Đổi mật khẩu', icon: <FaLock /> },
+    { id: 'notifications', label: 'Thông báo', icon: <FaBell /> }
   ];
 
   // Logic hiển thị an toàn
