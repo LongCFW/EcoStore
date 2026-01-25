@@ -1,88 +1,124 @@
-import React, { useState, useRef } from 'react'; // Thêm useRef
+import React, { useState, useRef } from 'react';
 import { Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { FaSave, FaCamera, FaKey, FaUserCheck } from 'react-icons/fa';
-// 1. Import axiosClient để gọi API và useAuth
 import { useAuth } from '../../hooks/useAuth';
-import axiosClient from '../../services/axiosClient'; // Đảm bảo đường dẫn đúng
+import axiosClient from '../../services/axiosClient';
 
 const AdminProfile = () => {
-  // 2. Lấy thêm hàm updateUser từ Context để đồng bộ Header
-  const { user, updateUser } = useAuth();
-  
-  // 3. Tạo Ref để kích hoạt input file ẩn
+  const { user, updateUser } = useAuth(); // Lấy hàm updateUser
   const fileInputRef = useRef(null);
   
   const demoAvatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
   
-  // State form
+  // State thông tin
   const [info, setInfo] = useState({
-    name: user?.name || "Admin User",
-    email: user?.email || "admin@ecostore.com",
-    role: user?.role || "Administrator",
+    name: user?.name || "",
+    email: user?.email || "",
+    role: user?.role || "",
     phone: user?.phone || ""
   });
 
+  // State mật khẩu
   const [pass, setPass] = useState({ current: '', new: '', confirm: '' });
-  const [showSuccess, setShowSuccess] = useState(false);
+  
+  // State thông báo
+  const [status, setStatus] = useState({ show: false, type: 'success', msg: '' });
 
-  // --- 4. HÀM XỬ LÝ UPLOAD ẢNH (Tái sử dụng logic bên Client) ---
+  // --- 1. HÀM UPLOAD ẢNH (Giữ nguyên như cũ) ---
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     try {
-        // Tạo FormData gửi lên Server
         const formData = new FormData();
         formData.append('avatar', file);
-
-        // Gọi API Upload (Dùng chung API với Client)
         const res = await axiosClient.post('/auth/upload-avatar', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-
         if (res.success) {
-            // CẬP NHẬT CONTEXT NGAY LẬP TỨC
-            // Việc này sẽ làm AdminHeader và Avatar ở đây đổi ảnh ngay
             updateUser({ avatarUrl: res.avatarUrl });
-            
-            alert("Đã cập nhật ảnh đại diện Admin!");
+            showAlert('success', 'Đã cập nhật ảnh đại diện!');
         }
-    } catch (error) {
-        console.error("Lỗi upload admin:", error);
-        alert("Lỗi khi tải ảnh lên server.");
+    } catch {
+        showAlert('danger', 'Lỗi khi tải ảnh lên server.');
     }
   };
-  // -------------------------------------------------------------
+
+  // --- 2. HÀM LƯU THÔNG TIN (UPDATE PROFILE) ---
+  const handleSaveInfo = async () => {
+      try {
+          // Gọi API Backend
+          const res = await axiosClient.put('/auth/profile/update', {
+              name: info.name,
+              phone: info.phone
+          });
+
+          if (res.success) {
+              // Quan trọng: Gọi updateUser để Header và các chỗ khác tự đổi tên/sđt
+              updateUser({ 
+                  name: res.user.name, 
+                  phone: res.user.phone 
+              });
+              
+              showAlert('success', 'Cập nhật thông tin thành công!');
+          }
+      } catch (error) {
+          console.error(error);
+          showAlert('danger', error.response?.data?.message || 'Lỗi cập nhật thông tin');
+      }
+  };
+
+  // --- 3. HÀM ĐỔI MẬT KHẨU ---
+  const handleChangePassword = async () => {
+      // Validate cơ bản
+      if (!pass.current || !pass.new || !pass.confirm) {
+          showAlert('warning', 'Vui lòng nhập đầy đủ các trường mật khẩu');
+          return;
+      }
+      if (pass.new !== pass.confirm) {
+          showAlert('warning', 'Mật khẩu xác nhận không khớp!');
+          return;
+      }
+      if (pass.new.length < 6) {
+          showAlert('warning', 'Mật khẩu mới phải từ 6 ký tự trở lên');
+          return;
+      }
+
+      try {
+          // Gọi API Backend
+          const res = await axiosClient.put('/auth/profile/change-password', {
+              currentPassword: pass.current,
+              newPassword: pass.new
+          });
+
+          if (res.success) {
+              showAlert('success', 'Đổi mật khẩu thành công!');
+              setPass({ current: '', new: '', confirm: '' }); // Reset form
+          }
+      } catch (error) {
+          console.error(error);
+          showAlert('danger', error.response?.data?.message || 'Mật khẩu hiện tại không đúng!');
+      }
+  };
+
+  // Helper hiển thị thông báo
+  const showAlert = (type, msg) => {
+      setStatus({ show: true, type, msg });
+      setTimeout(() => setStatus({ ...status, show: false }), 3000);
+  };
 
   const handleChangeInfo = (e) => setInfo({...info, [e.target.name]: e.target.value});
   const handleChangePass = (e) => setPass({...pass, [e.target.name]: e.target.value});
 
-  const handleSaveInfo = () => {
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-      // TODO: Gọi API update thông tin text nếu cần
-  };
-
-  const handleChangePassword = () => {
-      if(pass.new !== pass.confirm) {
-          alert("Mật khẩu xác nhận không khớp!");
-          return;
-      }
-      alert("Đổi mật khẩu thành công (Demo)");
-      setPass({ current: '', new: '', confirm: '' });
-  };
-
-  // Lấy ảnh hiển thị: Ưu tiên ảnh từ Context (vừa upload xong) -> DB -> Demo
   const currentAvatar = user?.avatarUrl || demoAvatar;
 
   return (
     <div>
       <h2 className="fw-bold mb-4" style={{color: 'var(--admin-text)'}}>Hồ sơ cá nhân</h2>
       
-      {showSuccess && <Alert variant="success" className="mb-4">Cập nhật thông tin thành công!</Alert>}
+      {status.show && <Alert variant={status.type} className="mb-4">{status.msg}</Alert>}
 
       <Row className="g-4">
-        {/* CỘT TRÁI: INFO CARD */}
+        {/* CỘT TRÁI: Avatar & Info Summary */}
         <Col lg={4}>
             <div className="admin-profile-card text-center">
                 <div className="admin-profile-header">
@@ -97,30 +133,25 @@ const AdminProfile = () => {
                         className="admin-avatar"
                         style={{ objectFit: 'cover' }} 
                     />
-                    
-                    {/* 5. NÚT CAMERA & INPUT ẨN */}
                     <button 
                         className="icon-btn position-absolute bottom-0 end-0 bg-white text-success border-success shadow-sm" 
                         style={{width: 35, height: 35}}
-                        onClick={() => fileInputRef.current.click()} // Kích hoạt input file
+                        onClick={() => fileInputRef.current.click()}
                     >
                         <FaCamera size={14}/>
                     </button>
-                    
                     <input 
                         type="file" 
                         ref={fileInputRef} 
                         style={{display: 'none'}} 
                         accept="image/*" 
-                        onChange={handleImageChange} // Gọi hàm upload
+                        onChange={handleImageChange} 
                     />
-                    {/* ------------------------- */}
                 </div>
 
                 <div className="admin-profile-body">
                     <h4 className="fw-bold mb-1" style={{color: 'var(--admin-text)'}}>{info.name}</h4>
                     <p className="text-muted mb-4">{info.email}</p>
-                    
                     <div className="d-flex justify-content-center gap-2">
                         <span className="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill">
                             <FaUserCheck className="me-2"/> Đang hoạt động
@@ -130,10 +161,11 @@ const AdminProfile = () => {
             </div>
         </Col>
 
-        {/* CỘT PHẢI: FORM (GIỮ NGUYÊN) */}
+        {/* CỘT PHẢI: Form Update */}
         <Col lg={8}>
             <div className="admin-profile-card">
                 <div className="p-4">
+                    {/* --- FORM THÔNG TIN --- */}
                     <h5 className="fw-bold mb-4 pb-2 border-bottom border-secondary border-opacity-10 text-success">
                         Thông tin chi tiết
                     </h5>
@@ -165,6 +197,7 @@ const AdminProfile = () => {
                         </Button>
                     </div>
 
+                    {/* --- FORM MẬT KHẨU --- */}
                     <h5 className="fw-bold mb-4 pb-2 border-bottom border-secondary border-opacity-10 text-danger">
                         <FaKey className="me-2"/> Bảo mật
                     </h5>
