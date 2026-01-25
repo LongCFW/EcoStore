@@ -1,14 +1,15 @@
-import { getAllCategoriesService, createCategoryService } from "../services/category.service.js";
+import { 
+    getCategoriesService, 
+    createCategoryService, 
+    updateCategoryService, 
+    deleteCategoryService 
+} from "../services/category.service.js";
 
-export const getAllCategories = async (req, res, next) => {
+export const getCategories = async (req, res, next) => {
     try {
-        const categories = await getAllCategoriesService();
-
-        res.status(200).json({
-            success: true,
-            data: categories,
-            message: "Get categories successfully",
-        });
+        const { page = 1, limit = 10, search = "" } = req.query;
+        const result = await getCategoriesService({ page, limit, search });
+        res.json(result);
     } catch (error) {
         next(error);
     }
@@ -16,25 +17,28 @@ export const getAllCategories = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, description, parentId, imageUrl } = req.body;
-
-        // Gọi service xử lý
-        const category = await createCategoryService({ 
-            name, description, parentId, imageUrl 
-        });
-
-        res.status(201).json({
-            success: true,
-            data: category,
-            message: "Category created successfully",
-        });
+        // req.body chứa: name, description, imageUrl, isActive
+        const category = await createCategoryService(req.body);
+        res.status(201).json({ success: true, message: "Tạo danh mục thành công", category });
     } catch (error) {
-        // Xử lý lỗi trùng lặp từ Service hoặc Mongoose (Code 11000)
-        if (error.message === "Category name already exists" || error.code === 11000) {
-            error.statusCode = 400; // Bad Request
-            error.message = "Category name already exists"; // Đảm bảo thông báo lỗi dễ hiểu
-        }
-        
-        next(error); // Chuyền lỗi cho Error Middleware xử lý
+        next(error);
+    }
+};
+
+export const updateCategory = async (req, res, next) => {
+    try {
+        const category = await updateCategoryService(req.params.id, req.body);
+        res.json({ success: true, message: "Cập nhật thành công", category });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteCategory = async (req, res, next) => {
+    try {
+        await deleteCategoryService(req.params.id);
+        res.json({ success: true, message: "Đã xóa danh mục" });
+    } catch (error) {
+        next(error);
     }
 };

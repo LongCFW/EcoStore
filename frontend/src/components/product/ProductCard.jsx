@@ -46,7 +46,9 @@ const ProductCard = ({ product, onQuickView }) => {
 
       <Card.Body className="d-flex flex-column p-3">
         <div className="text-muted small text-uppercase fw-bold mb-1" style={{fontSize: '0.75rem'}}>
-            {product.category || 'Thực phẩm'}
+            {typeof product.categoryId === 'object' && product.categoryId?.name 
+            ? product.categoryId.name 
+            : 'Sản phẩm'}
         </div>
         
         <Card.Title className="fs-6 mb-2">

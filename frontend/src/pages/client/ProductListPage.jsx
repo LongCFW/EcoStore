@@ -34,21 +34,14 @@ const ProductListPage = () => {
         const productList = response.data || [];
 
         const formattedProducts = productList.map(item => {
-            let catId = "unknown";
-            if (item.categoryId) {
-                if (typeof item.categoryId === 'object' && item.categoryId._id) {
-                    catId = item.categoryId._id.toString();
-                } else {
-                    catId = item.categoryId.toString();
-                }
-            }
+            let categoryData = item.categoryId;
             return {
               ...item,
               id: item._id, 
               price: item.price_cents, 
               salePrice: item.compareAtPriceCents || null, 
               image: item.images?.[0]?.imageUrl || 'https://placehold.co/300x300?text=No+Image', 
-              categoryId: catId, 
+              categoryId: categoryData, 
               brand: item.brand || "Khác",
             };
         });

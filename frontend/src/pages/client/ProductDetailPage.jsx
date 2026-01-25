@@ -53,7 +53,7 @@ const ProductDetailPage = () => {
                 price: item.price_cents,
                 salePrice: item.compareAtPriceCents || null,
                 image: item.images?.[0]?.imageUrl || 'https://placehold.co/300x300?text=No+Image',
-                categoryId: typeof item.categoryId === 'object' ? item.categoryId._id : item.categoryId,
+                categoryId: item.categoryId,
                 brand: item.brand || "Khác"
             }));
             setRelatedProducts(mappedRelated);
@@ -105,7 +105,9 @@ const ProductDetailPage = () => {
   const currentPrice = selectedVariant ? selectedVariant.price_cents : product.price_cents;
   const currentStock = selectedVariant ? selectedVariant.stock : (product.variants?.length > 0 ? 0 : 100); 
   const currentSku = selectedVariant ? selectedVariant.sku : product.sku;
-  const categoryName = product.categoryId?.name || "Sản phẩm";
+  const categoryName = (typeof product.categoryId === 'object' && product.categoryId?.name)
+    ? product.categoryId.name
+    : "Sản phẩm";
   const mainImage = (product.images && product.images.length > 0 && product.images[0].imageUrl) 
       ? product.images[0].imageUrl 
       : 'https://placehold.co/600x600?text=No+Image';

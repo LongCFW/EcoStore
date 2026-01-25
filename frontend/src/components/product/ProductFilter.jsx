@@ -34,7 +34,8 @@ const ProductFilter = ({ onFilter, onReset, availableBrands = [], initialFilters
       const fetchCategories = async () => {
           try {
               const response = await categoryApi.getAll();
-              setCategories(response.data || []);
+              const list = response.categories || response.data || [];
+              setCategories(list);
           } catch (error) {
               console.error("Lỗi tải danh mục:", error);
           } finally {
