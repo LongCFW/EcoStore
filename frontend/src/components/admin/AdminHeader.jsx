@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, Dropdown, Button } from 'react-bootstrap';
 import { FaBars, FaSearch, FaMoon, FaSun, FaUserCircle, FaSignOutAlt, FaHome } from 'react-icons/fa'; // Thêm FaHome
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useAdminTheme } from '../../context/useAdminTheme';
 import { Link } from 'react-router-dom';
 

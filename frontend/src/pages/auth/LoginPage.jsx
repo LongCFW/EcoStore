@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import authApi from '../../services/auth.service';
 import { FaArrowLeft, FaGoogle, FaFacebookF, FaLeaf } from 'react-icons/fa';
 import '../../assets/styles/auth-profile.css';

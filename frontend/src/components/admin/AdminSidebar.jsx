@@ -4,7 +4,7 @@ import {
     FaTachometerAlt, FaBox, FaShoppingBag, FaUsers, 
     FaChartBar, FaCogs , FaShieldAlt, FaLeaf
 } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const AdminSidebar = ({ isOpen, closeSidebar }) => {
   const { user } = useAuth();

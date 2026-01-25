@@ -1,4 +1,3 @@
-// frontend/src/pages/auth/RegisterPage.jsx
 import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,19 +7,31 @@ import '../../assets/styles/auth-profile.css';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  // Thêm field phone
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' });
+  // State lưu dữ liệu form
+  const [formData, setFormData] = useState({ 
+      name: '', 
+      email: '', 
+      password: '', 
+      phone: '' 
+  });
+  
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Xử lý thay đổi input
+  const handleChange = (e) => {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+      // Xóa lỗi khi người dùng bắt đầu gõ lại
+      if (error) setError('');
+  };
 
+  // Xử lý Submit Form
   const handleSubmit = async (e) => {
       e.preventDefault();
       setError('');
       setLoading(true);
 
-      // Validate cơ bản số điện thoại
+      // 1. Validate cơ bản số điện thoại ở Frontend trước khi gọi API
       const phoneRegex = /^[0-9]{10,11}$/;
       if (!phoneRegex.test(formData.phone)) {
           setError("Số điện thoại không hợp lệ (10-11 số)");
@@ -28,14 +39,25 @@ const RegisterPage = () => {
           return;
       }
 
+      // 2. Validate độ dài mật khẩu (Backend đã check nhưng Frontend check lại cho nhanh)
+      if (formData.password.length < 6) {
+          setError("Mật khẩu phải có ít nhất 6 ký tự");
+          setLoading(false);
+          return;
+      }
+
       try {
+          // 3. Gọi API đăng ký
           const response = await authApi.register(formData);
+          
+          // 4. Nếu thành công (Backend trả về success: true)
           if (response.success) {
-              alert("Đăng ký thành công! Vui lòng đăng nhập.");
+              alert("Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.");
               navigate('/login'); 
           }
       } catch (err) {
           console.error("Register failed:", err);
+          // Hiển thị thông báo lỗi từ Backend (ví dụ: Email đã tồn tại)
           setError(err.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.");
       } finally {
           setLoading(false);
@@ -51,7 +73,7 @@ const RegisterPage = () => {
                   <FaLeaf size={40} className="text-success"/>
               </div>
               <h1 className="display-4 fw-bold mb-3">Tham Gia Ngay</h1>
-              <p className="fs-5 opacity-90">Tạo tài khoản để nhận ngay Voucher 50k.</p>
+              <p className="fs-5 opacity-90">Tạo tài khoản để nhận ngay ưu đãi thành viên mới.</p>
           </div>
       </div>
 
@@ -68,23 +90,34 @@ const RegisterPage = () => {
               <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3">
                       <Form.Label className="fw-bold small text-secondary">HỌ VÀ TÊN</Form.Label>
-                      <Form.Control type="text" name="name" placeholder="Nguyễn Văn A" className="modern-input" onChange={handleChange} required/>
+                      <Form.Control 
+                        type="text" name="name" placeholder="Nguyễn Văn A" 
+                        className="modern-input" onChange={handleChange} required
+                      />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
                       <Form.Label className="fw-bold small text-secondary">EMAIL</Form.Label>
-                      <Form.Control type="email" name="email" placeholder="name@example.com" className="modern-input" onChange={handleChange} required/>
+                      <Form.Control 
+                        type="email" name="email" placeholder="name@example.com" 
+                        className="modern-input" onChange={handleChange} required
+                      />
                   </Form.Group>
 
-                  {/* THÊM TRƯỜNG SỐ ĐIỆN THOẠI */}
                   <Form.Group className="mb-3">
                       <Form.Label className="fw-bold small text-secondary">SỐ ĐIỆN THOẠI</Form.Label>
-                      <Form.Control type="tel" name="phone" placeholder="0901234567" className="modern-input" onChange={handleChange} required/>
+                      <Form.Control 
+                        type="tel" name="phone" placeholder="0901234567" 
+                        className="modern-input" onChange={handleChange} required
+                      />
                   </Form.Group>
 
                   <Form.Group className="mb-4">
                       <Form.Label className="fw-bold small text-secondary">MẬT KHẨU</Form.Label>
-                      <Form.Control type="password" name="password" placeholder="Tối thiểu 6 ký tự" className="modern-input" onChange={handleChange} required/>
+                      <Form.Control 
+                        type="password" name="password" placeholder="Tối thiểu 6 ký tự" 
+                        className="modern-input" onChange={handleChange} required
+                      />
                   </Form.Group>
 
                   <Button variant="success" type="submit" className="w-100 py-3 rounded-pill fw-bold shadow-sm mb-4 text-uppercase gradient-btn" disabled={loading}>
