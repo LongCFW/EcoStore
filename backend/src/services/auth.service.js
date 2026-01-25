@@ -32,7 +32,8 @@ export const loginService = async (email, password) => {
             email: user.email,
             name: user.name,
             phone: user.phone,
-            role: user.role?.name
+            role: user.role?.name,
+            avatarUrl: user.avatarUrl
         }
     };
 };

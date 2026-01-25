@@ -1,5 +1,6 @@
 import { loginService, registerService, verifyResetService, resetPasswordService } from "../services/auth.service.js";
 import User from "../models/user.js";
+import bcrypt from "bcrypt";
 
 export const login = async (req, res, next) => {
     try {
@@ -119,5 +120,70 @@ export const updateAvatar = async (req, res) => {
         // ĐÂY LÀ CHỖ QUAN TRỌNG NHẤT
         console.error("❌ LỖI NGHIÊM TRỌNG:", error); // Nó sẽ in lỗi đỏ lòm ra terminal
         res.status(500).json({ message: error.message });
+    }
+};
+
+
+// --- HÀM 1: CẬP NHẬT THÔNG TIN (Tên, SĐT) ---
+export const updateProfile = async (req, res, next) => {
+    try {
+        const userId = req.user.userId;
+        const { name, phone } = req.body;
+
+        // Tìm và update
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { name, phone },
+            { new: true } // Trả về data mới
+        ).select("-password_hash"); // Không trả về mật khẩu
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            success: true,
+            message: "Cập nhật thông tin thành công",
+            user: {
+                name: updatedUser.name,
+                phone: updatedUser.phone,
+                // Trả về các field khác để frontend đồng bộ nếu cần
+                email: updatedUser.email,
+                role: req.user.role, 
+                avatarUrl: updatedUser.avatarUrl
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- HÀM 2: ĐỔI MẬT KHẨU ---
+export const changePassword = async (req, res, next) => {
+    try {
+        const userId = req.user.userId;
+        const { currentPassword, newPassword } = req.body;
+
+        // 1. Tìm user để lấy mật khẩu cũ
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // 2. Kiểm tra mật khẩu hiện tại có đúng không
+        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
+        }
+
+        // 3. Mã hóa mật khẩu mới
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // 4. Lưu vào DB
+        user.password_hash = hashedPassword;
+        await user.save();
+
+        res.json({ success: true, message: "Đổi mật khẩu thành công" });
+    } catch (error) {
+        next(error);
     }
 };
