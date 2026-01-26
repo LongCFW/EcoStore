@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Container, Row, Col, Button, Badge, Tabs, Tab, Breadcrumb, Spinner } from "react-bootstrap";
-import { FaHeart, FaMinus, FaPlus, FaTruck, FaShieldAlt, FaUndo, FaCheckCircle, FaBoxOpen } from "react-icons/fa";
+import { FaHeart, FaMinus, FaPlus, FaTruck, FaShieldAlt, FaUndo, FaCheckCircle, FaBoxOpen, FaRegHeart } from "react-icons/fa";
 import ProductCard from "../../components/product/ProductCard";
 import QuickViewModal from "../../components/product/QuickViewModal";
 import productApi from "../../services/product.service";
 import '../../assets/styles/products.css';
 import AddToCartBtn from '../../components/cart/AddToCartBtn';
+import { useWishlist } from '../../hooks/useWishlist';
 
 const ProductDetailPage = () => {
   const { slug } = useParams(); 
@@ -22,6 +23,9 @@ const ProductDetailPage = () => {
   // States Quick View (Đã khôi phục)
   const [showQuickView, setShowQuickView] = useState(false);
   const [selectedQuickViewProduct, setSelectedQuickViewProduct] = useState(null);
+
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isLiked = product ? isInWishlist(product._id) : false;    
 
   // --- 1. LẤY DỮ LIỆU SẢN PHẨM CHÍNH ---
   useEffect(() => {
@@ -205,8 +209,12 @@ const ProductDetailPage = () => {
                     >
                         {currentStock > 0 ? "Thêm vào giỏ" : "Hết hàng"}
                     </AddToCartBtn>
-                    <Button variant="outline-danger" className="rounded-circle p-0 d-flex align-items-center justify-content-center border-2" style={{width: '48px', height: '48px'}}>
-                        <FaHeart />
+                    <Button 
+                        variant={isLiked ? "danger" : "outline-secondary"} 
+                        className="rounded-circle p-0 d-flex align-items-center justify-content-center border-2 transition-all" 
+                        style={{width: '48px', height: '48px'}}
+                        onClick={() => toggleWishlist(product)}>
+                        {isLiked ? <FaHeart className="text-white"/> : <FaRegHeart />}
                     </Button>
                 </div>
                 

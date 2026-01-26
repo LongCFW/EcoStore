@@ -227,3 +227,64 @@ export const setDefaultAddress = async (req, res, next) => {
         next(error);
     }
 };
+
+// --- 5. WISHLIST: LẤY DANH SÁCH YÊU THÍCH ---
+export const getWishlist = async (req, res, next) => {
+    try {
+        const userId = req.user.userId;
+        const user = await User.findById(userId).populate('wishlist'); // Populate để lấy full info sản phẩm
+
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        res.json({
+            success: true,
+            data: user.wishlist || []
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- 6. WISHLIST: THÊM / XÓA (TOGGLE) ---
+export const toggleWishlist = async (req, res, next) => {
+    try {
+        const userId = req.user.userId;
+        const { productId } = req.body;
+
+        if (!productId) return res.status(400).json({ message: "Product ID required" });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        // Kiểm tra xem sản phẩm đã có trong wishlist chưa
+        // Lưu ý: user.wishlist chứa các ObjectId, nên cần convert sang string để so sánh
+        const index = user.wishlist.findIndex(id => id.toString() === productId);
+
+        let message = "";
+        let type = ""; // 'added' hoặc 'removed' để frontend xử lý icon
+
+        if (index === -1) {
+            // Chưa có -> Thêm vào
+            user.wishlist.push(productId);
+            message = "Đã thêm vào danh sách yêu thích";
+            type = "added";
+        } else {
+            // Có rồi -> Xóa đi
+            user.wishlist.splice(index, 1);
+            message = "Đã xóa khỏi danh sách yêu thích";
+            type = "removed";
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message,
+            type, 
+            wishlist: user.wishlist // Trả về danh sách ID mới nhất để update context
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};

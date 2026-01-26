@@ -21,7 +21,7 @@ const UserSchema = new Schema({
     role: { type: Schema.Types.ObjectId, ref: "Role" },
     status: { type: Number, default: 1 },
     addresses: [AddressSchema],    
-    wishlist: [{ type: Schema.Types.ObjectId }],
+    wishlist: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     googleId: String,
     email_Verified: Boolean,
     lastLoginAt: Date,

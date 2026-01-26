@@ -1,48 +1,55 @@
-import React, { useState } from 'react';
-import { Row, Col, Button } from 'react-bootstrap';
-import { FaTrash, FaShoppingCart, FaHeart } from 'react-icons/fa';
+import React from 'react';
+import { Button } from 'react-bootstrap';
+import { FaTrash, FaShoppingCart, FaHeart, FaBoxOpen } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { useWishlist } from '../../hooks/useWishlist';
+import AddToCartBtn from '../cart/AddToCartBtn';
 
 const WishlistTab = () => {
-  const [wishlist, setWishlist] = useState([
-    { id: 1, name: "Bàn chải tre Eco", price: 45000, image: "https://images.unsplash.com/photo-1607613009820-a29f7bb6dc2d?auto=format&fit=crop&w=150", stock: true },
-    { id: 4, name: "Xà phòng thảo mộc", price: 80000, image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?auto=format&fit=crop&w=150", stock: false },
-  ]);
-
-  const handleRemove = (id) => {
-      setWishlist(wishlist.filter(item => item.id !== id));
-  };
-
-  const handleAddToCart = (item) => {
-      alert(`Đã thêm "${item.name}" vào giỏ hàng!`);
-  };
+  const { wishlist, toggleWishlist } = useWishlist();
 
   return (
     <div className="profile-content-card animate-fade-in">
       <h4 className="fw-bold mb-4 pb-3 border-bottom text-danger"><FaHeart className="me-2"/>Sản phẩm yêu thích</h4>
+      
       {wishlist.length > 0 ? (
-        wishlist.map(item => (
-            <div key={item.id} className="d-flex align-items-center border-bottom py-3 hover-bg-light transition-all rounded px-2">
-                <img src={item.image} alt={item.name} className="rounded border" style={{width: '80px', height: '80px', objectFit:'cover'}} />
-                <div className="ms-3 flex-grow-1">
-                    <Link to={`/product/${item.id}`} className="fw-bold text-dark text-decoration-none hover-green">{item.name}</Link>
-                    <div className="text-success fw-bold">{item.price.toLocaleString()} đ</div>
-                    <div className={`small ${item.stock ? 'text-primary' : 'text-danger'}`}>
-                        {item.stock ? 'Còn hàng' : 'Hết hàng'}
+        wishlist.map(item => {            
+            const image = item.images?.[0]?.imageUrl || 'https://placehold.co/100';
+            const price = item.price_cents || 0;            
+            const isStock = (item.variants?.[0]?.stock || item.stock || 0) > 0;
+
+            return (
+                <div key={item._id} className="d-flex align-items-center border-bottom py-3 hover-bg-light transition-all rounded px-2">
+                    <img src={image} alt={item.name} className="rounded border" style={{width: '80px', height: '80px', objectFit:'cover'}} />
+                    <div className="ms-3 flex-grow-1">
+                        <Link to={`/product/${item.slug}`} className="fw-bold text-dark text-decoration-none hover-green fs-6">{item.name}</Link>
+                        <div className="text-success fw-bold">{price.toLocaleString()} đ</div>
+                        <div className={`small ${isStock ? 'text-primary' : 'text-danger'}`}>
+                            {isStock ? 'Còn hàng' : 'Hết hàng'}
+                        </div>
+                    </div>
+                    <div className="d-flex flex-column gap-2 ms-3">
+                          <AddToCartBtn 
+                            productId={item._id}
+                            className="rounded-pill px-3 btn-sm"
+                            disabled={!isStock}
+                          >
+                            Thêm
+                          </AddToCartBtn>
+                          
+                          <Button variant="outline-danger" size="sm" className="rounded-pill px-3" onClick={() => toggleWishlist(item)}>
+                            <FaTrash className="me-1"/> Xóa
+                          </Button>
                     </div>
                 </div>
-                <div className="d-flex flex-column gap-2">
-                      <Button variant="success" size="sm" className="rounded-pill px-3" disabled={!item.stock} onClick={() => handleAddToCart(item)}>
-                        <FaShoppingCart className="me-1"/> Thêm
-                      </Button>
-                      <Button variant="outline-danger" size="sm" className="rounded-pill px-3" onClick={() => handleRemove(item.id)}>
-                        <FaTrash className="me-1"/> Xóa
-                      </Button>
-                </div>
-            </div>
-        ))
+            );
+        })
       ) : (
-          <p className="text-muted text-center py-5">Danh sách yêu thích trống.</p>
+          <div className="text-center py-5 text-muted">
+              <FaBoxOpen size={40} className="mb-3 opacity-50"/>
+              <p>Danh sách yêu thích trống.</p>
+              <Link to="/products" className="btn btn-outline-danger rounded-pill px-4">Khám phá ngay</Link>
+          </div>
       )}
     </div>
   );

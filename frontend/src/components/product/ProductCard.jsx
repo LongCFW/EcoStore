@@ -1,11 +1,19 @@
 import React from "react";
 import { Card, Badge } from "react-bootstrap";
-import { FaShoppingCart, FaEye, FaBolt, FaHeart } from "react-icons/fa";
+import { FaRegHeart, FaEye, FaBolt, FaHeart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import '../../assets/styles/products.css'; 
 import AddToCartBtn from '../cart/AddToCartBtn';
+import { useWishlist } from '../../hooks/useWishlist';
 
 const ProductCard = ({ product, onQuickView }) => {
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isLiked = isInWishlist(product._id || product.id);
+
+  const handleWishlistClick = (e) => {
+      e.preventDefault();
+      toggleWishlist(product);
+  };
   return (
     <Card className="h-100 border-0 product-card-wrapper">
       <div className="product-img-container">
@@ -38,10 +46,11 @@ const ProductCard = ({ product, onQuickView }) => {
 
           {/* Nút tim yêu thích (Luôn hiện) */}
           <button 
-            className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center text-danger"
-            style={{width: 35, height: 35, zIndex: 3}}
+            className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+            style={{width: 35, height: 35, zIndex: 3, color: isLiked ? '#dc3545' : '#ccc'}}
+            onClick={handleWishlistClick}
           >
-            <FaHeart size={14}/>
+            {isLiked ? <FaHeart size={16}/> : <FaRegHeart size={16} className="text-secondary"/>}
           </button>
       </div>
 
