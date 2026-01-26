@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Container, Row, Col, Button, Badge, Tabs, Tab, Breadcrumb, Spinner } from "react-bootstrap";
-import { FaShoppingCart, FaHeart, FaMinus, FaPlus, FaStar, FaTruck, FaShieldAlt, FaUndo } from "react-icons/fa";
+import { FaHeart, FaMinus, FaPlus, FaTruck, FaShieldAlt, FaUndo, FaCheckCircle, FaBoxOpen } from "react-icons/fa";
 import ProductCard from "../../components/product/ProductCard";
 import QuickViewModal from "../../components/product/QuickViewModal";
 import productApi from "../../services/product.service";
@@ -142,12 +142,19 @@ const ProductDetailPage = () => {
                 <h2 className="fw-bold mb-3 text-dark">{product.name}</h2>
                 
                 <div className="d-flex align-items-center gap-3 mb-4">
-                    <div className="text-warning small">
-                        {[...Array(5)].map((_,i) => <FaStar key={i} />)} 
-                        <span className="text-dark fw-bold ms-2">5.0</span>
+                    {currentStock > 0 ? (
+                        <div className="text-success small fw-bold d-flex align-items-center gap-1">
+                            <FaCheckCircle /> Còn hàng ({currentStock} sản phẩm)
+                        </div>
+                    ) : (
+                        <div className="text-danger small fw-bold d-flex align-items-center gap-1">
+                            <FaBoxOpen /> Tạm hết hàng
+                        </div>
+                    )}
+                    
+                    <div className="border-start ps-3 text-muted small">
+                        SKU: <span className="font-monospace text-dark">{currentSku}</span>
                     </div>
-                    <div className="border-start ps-3 text-muted small">Đã bán: 100+</div>
-                    <div className="border-start ps-3 text-muted small">SKU: {currentSku}</div>
                 </div>
 
                 <div className="price-tag-detail mb-4">

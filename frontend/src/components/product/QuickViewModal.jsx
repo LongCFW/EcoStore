@@ -24,8 +24,10 @@ const QuickViewModal = ({ show, handleClose, product }) => {
   // Mapping Image & Category
   const image = product.image || product.images?.[0]?.imageUrl || 'https://placehold.co/400';
   const categoryName = typeof product.categoryId === 'object' ? product.categoryId?.name : 'Sản phẩm Eco';
+
+  const stock = product.variants?.[0]?.stock || product.stock || 0;
   // Check stock (nếu không có variants thì check stock, nếu có variants thì coi như còn hàng hoặc check variant đầu)
-  const isOutOfStock = product.stock <= 0 && (!product.variants || product.variants.length === 0);
+  const isOutOfStock = stock <= 0 && (!product.variants || product.variants.length === 0);
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered className="quick-view-modal">
@@ -62,7 +64,7 @@ const QuickViewModal = ({ show, handleClose, product }) => {
                         {categoryName}
                     </Badge>
                     <span className={`small fw-bold ${!isOutOfStock ? 'text-success' : 'text-danger'}`}>
-                        {!isOutOfStock ? <><FaCheck className="me-1"/>Còn hàng</> : <><FaTimes className="me-1"/>Hết hàng</>}
+                        {!isOutOfStock ? <><FaCheck className="me-1"/>Còn {stock} sản phẩm</> : <><FaTimes className="me-1"/>Hết hàng</>}
                     </span>
                 </div>
 
