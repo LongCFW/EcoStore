@@ -73,7 +73,15 @@ const ProductListPage = () => {
 
       // 1. Filter Category
       if (catIds.length > 0) {
-          result = result.filter(p => catIds.includes(String(p.categoryId)));
+          result = result.filter(p => {
+              // Lấy ID chuẩn dù p.categoryId là object hay string
+              const pCatId = typeof p.categoryId === 'object' && p.categoryId 
+                  ? p.categoryId._id 
+                  : p.categoryId;
+              
+              // So sánh ID (chuyển về string cho chắc chắn)
+              return catIds.includes(String(pCatId));
+          });
       }
 
       // 2. Filter Brand

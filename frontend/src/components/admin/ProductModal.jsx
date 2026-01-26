@@ -1,31 +1,49 @@
 import React, { useState, useRef } from 'react';
 import { Modal, Button, Form, Row, Col, InputGroup, Nav, Tab } from 'react-bootstrap';
-import { FaSave, FaTimes, FaDollarSign, FaBoxOpen, FaImage, FaCloudUploadAlt } from 'react-icons/fa';
+import { FaSave, FaTimes, FaDollarSign, FaBoxOpen, FaImage, FaCloudUploadAlt, FaTag, FaBarcode, FaWeightHanging } from 'react-icons/fa';
 
 const DEFAULT_VALUES = {
     name: '',
     category: '', 
+    brand: '',
     price_cents: '', 
     stock: '',
+    sku: '',         
+    variantName: '',
     description: '',
     imageUrl: '', 
     preview: 'https://placehold.co/300x300?text=No+Image'
 };
 
-const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) => {
+const ProductModal = ({ show, handleClose, product, onSave, categories = [], availableBrands = [] }) => {
   const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('url'); // 'url' hoặc 'file'
+  const [brandMode, setBrandMode] = useState(product && product.brand ? 'select' : 'select');
+  
+  const getCategoryId = (prod) => {
+      if (!prod || !prod.categoryId) return '';
+      return typeof prod.categoryId === 'object' ? prod.categoryId._id : prod.categoryId;
+  };
 
   // Init State
   const [formData, setFormData] = useState(() => {
       if (product) {
           const img = product.images?.[0]?.imageUrl || '';
+          const firstVariant = product.variants?.[0] || {};
+          const isExistingBrand = availableBrands.includes(product.brand);
+          if (product.brand && !isExistingBrand) {
+             // Side effect trong init state: Có thể setBrandMode ở đây hoặc dùng useEffect
+             // Tuy nhiên để đơn giản ta cứ init giá trị cho form data
+          }
           return {
               id: product._id || product.id,
               name: product.name,
-              category: typeof product.categoryId === 'object' ? product.categoryId._id : product.categoryId,
+              category: getCategoryId(product),
+              brand: product.brand || '',
               price_cents: product.price_cents,
               stock: product.variants?.[0]?.stock || (product.stock || 0),
+              sku: firstVariant.sku || (product.sku || ''), 
+              variantName: firstVariant.name || '',
               description: product.description || '',
               imageUrl: img,
               preview: img || DEFAULT_VALUES.preview
@@ -66,7 +84,7 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
   };
 
   const handleSubmit = () => {
-    if (!formData.name || !formData.price_cents || !formData.category) {
+    if (!formData.name || !formData.price_cents || !formData.category || !formData.brand) {
         alert("Vui lòng điền tên, danh mục và giá!");
         return;
     }
@@ -74,14 +92,13 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
     const payload = {
         name: formData.name,
         categoryId: formData.category,
+        brand: formData.brand,
         price_cents: Number(formData.price_cents),
-        description: formData.description,
-        // Backend nhận mảng images object
-        images: formData.imageUrl ? [{ imageUrl: formData.imageUrl }] : [],
-        brand: "EcoStore", 
-        // Giả lập variants để lưu stock
+        description: formData.description,       
+        images: formData.imageUrl ? [{ imageUrl: formData.imageUrl }] : [],        
         variants: [{ 
-            name: "Default", 
+            name: formData.variantName || "Default",
+            sku: formData.sku,
             price_cents: Number(formData.price_cents),
             stock: Number(formData.stock) || 0 
         }]
@@ -90,7 +107,7 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
     if (formData.id) payload.id = formData.id;
 
     onSave(payload);
-    handleClose(); // Đóng modal ngay (trải nghiệm người dùng tốt hơn)
+    // handleClose(); // Đóng modal ngay (trải nghiệm người dùng tốt hơn)
   };
 
   return (
@@ -183,6 +200,76 @@ const ProductModal = ({ show, handleClose, product, onSave, categories = [] }) =
                                         <option key={cat._id} value={cat._id}>{cat.name}</option>
                                     ))}
                                 </Form.Select>
+                            </Form.Group>
+                        </Col>
+                                
+                        <Col xs={12} sm={6}>
+                            <Form.Group>
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                    <Form.Label className="admin-label m-0">Thương hiệu <span className="text-danger">*</span></Form.Label>
+                                    {/* Nút chuyển đổi chế độ nhập */}
+                                    <Button 
+                                        variant="link" 
+                                        size="sm" 
+                                        className="text-decoration-none p-0" 
+                                        onClick={() => {
+                                            setBrandMode(prev => prev === 'select' ? 'new' : 'select');
+                                            setFormData({...formData, brand: ''}); // Reset brand khi đổi chế độ
+                                        }}
+                                    >
+                                        {brandMode === 'select' ? '+ Thêm mới' : 'Chọn có sẵn'}
+                                    </Button>
+                                </div>
+
+                                {brandMode === 'select' ? (
+                                    <Form.Select name="brand" value={formData.brand} onChange={handleChange} className="admin-input">
+                                        <option value="">-- Chọn thương hiệu --</option>
+                                        {availableBrands.map((b, idx) => (
+                                            <option key={idx} value={b}>{b}</option>
+                                        ))}
+                                        <option value="Khác">Khác</option>
+                                    </Form.Select>
+                                ) : (
+                                    <InputGroup>
+                                        <InputGroup.Text className="bg-light border-end-0"><FaTag className="text-muted"/></InputGroup.Text>
+                                        <Form.Control 
+                                            type="text" 
+                                            name="brand" 
+                                            value={formData.brand} 
+                                            onChange={handleChange} 
+                                            className="admin-input border-start-0 ps-0" 
+                                            placeholder="Nhập tên thương hiệu mới..." 
+                                        />
+                                    </InputGroup>
+                                )}
+                            </Form.Group>
+                        </Col>
+
+                        <Col xs={12} sm={6}>
+                            <Form.Group>
+                                <Form.Label className="admin-label">Mã SKU (Biến thể)</Form.Label>
+                                <InputGroup>
+                                    <InputGroup.Text className="bg-light border-end-0"><FaBarcode className="text-muted"/></InputGroup.Text>
+                                    <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} className="admin-input border-start-0 ps-0" placeholder="VD: SP-001-30G" />
+                                </InputGroup>
+                            </Form.Group>
+                        </Col>
+
+                        <Col xs={12} sm={6}>
+                            <Form.Group>
+                                <Form.Label className="admin-label">Phân loại / Khối lượng</Form.Label>
+                                <InputGroup>
+                                    <InputGroup.Text className="bg-light border-end-0"><FaWeightHanging className="text-muted"/></InputGroup.Text>
+                                    {/* INPUT CHO VARIANT NAME */}
+                                    <Form.Control 
+                                        type="text" 
+                                        name="variantName" 
+                                        value={formData.variantName} 
+                                        onChange={handleChange} 
+                                        className="admin-input border-start-0 ps-0" 
+                                        placeholder="VD: 30g, Hộp lớn..." 
+                                    />
+                                </InputGroup>
                             </Form.Group>
                         </Col>
 
