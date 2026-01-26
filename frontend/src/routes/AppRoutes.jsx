@@ -25,6 +25,7 @@ import SettingsPage from "../pages/admin/SettingsPage";
 import SystemLogPage from '../pages/admin/SystemLogPage';
 import AdminProfile from "../pages/admin/AdminProfile";
 import CategoryManager from "../pages/admin/CategoryManager";
+import SuccessPage from "../pages/client/SuccessPage";
 
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 
@@ -41,6 +42,7 @@ const AppRoutes = () => {
         <Route path="/products" element={<ProductListPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/checkout/success" element={<SuccessPage />} />
         <Route path="/offers" element={<OffersPage />} />
       </Route>
 

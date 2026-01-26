@@ -25,11 +25,15 @@ export const authMiddleware = (req, res, next) => {
 };
 
 export const verifyToken = (req, res, next) => {
+  console.log("--- [DEBUG AUTH] ---");
+  console.log("1. Cookies nhận được:", req.cookies?.token ? "Có Token" : "Không có Token");
+  console.log("2. Header Auth:", req.header("Authorization"));
   // 1. Lấy token từ header (Dạng: Bearer <token>)
   const authHeader = req.header("Authorization");
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
+    console.log("❌ Lỗi: Không tìm thấy Token ở đâu cả");
     return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
   }
 
@@ -39,10 +43,12 @@ export const verifyToken = (req, res, next) => {
     
     // 3. Lưu thông tin user đã giải mã vào req để các route sau dùng
     req.user = verified; 
-    
+    console.log("✅ Xác thực thành công cho User ID:", verified.userId || verified.id);
+
     next(); // Cho phép đi tiếp
   } catch (err) {
-    res.status(400).json({ success: false, message: "Invalid Token" });
+    console.log("❌ Lỗi verify JWT:", err.message);
+    res.status(401).json({ success: false, message: "Invalid Token" });
   }
 };
 

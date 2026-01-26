@@ -1,13 +1,22 @@
 import axiosClient from "./axiosClient";
 
 const orderApi = {
+    // --- CLIENT ---
     createOrder: (data) => {
-        // data: { shippingAddress, phoneNumber, note, paymentMethod }
         return axiosClient.post('/orders', data);
     },
     getMyOrders: () => {
-        return axiosClient.get('/orders');
+        return axiosClient.get('/orders/my-orders'); // Lưu ý: Backend đã đổi route này thành /my-orders
+    },
+
+    // --- ADMIN ---
+    getAllOrders: (params) => {
+        // params: { page, limit, status }
+        return axiosClient.get('/orders/admin/all', { params });
+    },
+    updateOrderStatus: (orderId, status) => {
+        return axiosClient.put(`/orders/admin/${orderId}/status`, { status });
     }
 };
 
-export default orderApi; // <--- Dòng này quan trọng để fix lỗi import default
+export default orderApi;

@@ -36,6 +36,11 @@ export const CartProvider = ({ children }) => {
         fetchCart();
     }, [fetchCart]);
 
+    // --- MỚI: HÀM XÓA GIỎ HÀNG (Dùng sau khi Checkout thành công) ---
+    const clearCart = useCallback(() => {
+        setCartItems([]); // Xóa ngay lập tức trên giao diện
+    }, []);
+
     const addToCart = async (productId, quantity = 1) => {
         if (!user) {
             toast.error("Bạn cần đăng nhập!");
@@ -50,7 +55,6 @@ export const CartProvider = ({ children }) => {
             const res = await cartApi.addToCart({ productId, quantity });
             
             if (res.success) {
-                // Lọc bỏ null khi set state mới
                 const validItems = (res.data.items || []).filter(item => item.productId !== null);
                 setCartItems(validItems);
                 
@@ -67,7 +71,6 @@ export const CartProvider = ({ children }) => {
         try {                       
             const res = await cartApi.updateQuantity({ productId, quantity: newQuantity });
             if (res.success) {
-                // Chỉ update items, không reset toàn bộ
                 const validItems = (res.data.items || []).filter(item => item.productId !== null);
                 setCartItems(validItems);
             }
@@ -99,6 +102,7 @@ export const CartProvider = ({ children }) => {
             updateQuantity, 
             removeFromCart,
             refreshCart: fetchCart,
+            clearCart, // Export hàm này để CheckoutPage dùng
             loading
         }}>
             {children}            

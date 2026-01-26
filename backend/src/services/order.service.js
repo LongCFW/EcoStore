@@ -1,81 +1,104 @@
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
 import Product from "../models/product.js";
-import mongoose from "mongoose";
 
-export const createOrderService = async (userId, shippingData) => {
-    const session = await mongoose.startSession();
-    session.startTransaction(); // Bắt đầu giao dịch
-
-    try {
-        const cart = await Cart.findOne({ userId });
-        if (!cart || cart.items.length === 0) {
-            throw new Error("Cart is empty");
-        }
-
-        let totalAmount_cents = 0;
-        const orderItems = [];
-
-        for (const item of cart.items) {
-            // Tìm product trong session này
-            const product = await Product.findById(item.productId).session(session);
-            if (!product) throw new Error(`Product not found: ${item.productId}`);
-
-            // Luôn thao tác với variant đầu tiên
-            const variant = product.variants[0];
-
-            if (variant.stock < item.quantity) {
-                throw new Error(`Product ${product.name} is out of stock`);
-            }
-
-            // Trừ kho
-            variant.stock -= item.quantity;
-            
-            // Lưu sản phẩm (với session)
-            await product.save({ session });
-
-            // Snapshot
-            orderItems.push({
-                productId: product._id,
-                name: product.name,
-                variantName: variant.sku, // Hoặc kết hợp attributes màu/size
-                price_cents: variant.price_cents, // Lấy giá của Variant
-                image: product.images[0]?.imageUrl,
-                quantity: item.quantity
-            });
-
-            totalAmount_cents += variant.price_cents * item.quantity;
-        }
-
-        // Tạo Order
-        const newOrder = await Order.create([{
-            userId,
-            items: orderItems,
-            totalAmount_cents,
-            shippingAddress: shippingData.shippingAddress,
-            phoneNumber: shippingData.phoneNumber,
-            note: shippingData.note,
-            paymentMethod: shippingData.paymentMethod || "COD"
-        }], { session }); // Quan trọng: Phải truyền session vào options của create (dạng array)
-
-        // Xóa cart
-        cart.items = [];
-        await cart.save({ session });
-
-        // Commit transaction (Lưu tất cả thay đổi)
-        await session.commitTransaction();
-        session.endSession();
-
-        return newOrder[0]; // create với session trả về mảng
-    } catch (error) {
-        // Nếu có lỗi, rollback (hoàn tác) tất cả
-        await session.abortTransaction();
-        session.endSession();
-        throw error;
+// --- CLIENT: TẠO ĐƠN HÀNG ---
+export const createOrderService = async (userId, orderData) => {
+    // 1. Lấy giỏ hàng
+    const cart = await Cart.findOne({ userId });
+    if (!cart || cart.items.length === 0) {
+        throw new Error("Giỏ hàng trống");
     }
+
+    let totalAmount_cents = 0;
+    const orderItems = [];
+
+    // 2. Duyệt qua từng sản phẩm để check tồn kho và tính tiền
+    for (const item of cart.items) {
+        const product = await Product.findById(item.productId);
+        if (!product) throw new Error(`Sản phẩm không tồn tại: ${item.productId}`);
+
+        // Logic lấy biến thể: Mặc định lấy variants[0] như bạn yêu cầu
+        const variant = product.variants?.[0]; 
+        if (!variant) throw new Error(`Sản phẩm ${product.name} lỗi dữ liệu (không có variant)`);
+
+        if (variant.stock < item.quantity) {
+            throw new Error(`Sản phẩm ${product.name} đã hết hàng`);
+        }
+
+        // Trừ tồn kho
+        variant.stock -= item.quantity;
+        await product.save(); // Lưu lại sản phẩm đã trừ kho
+
+        // Snapshot dữ liệu vào Order (Lưu lại giá và tên tại thời điểm mua)
+        orderItems.push({
+            productId: product._id,
+            name: product.name,
+            price_cents: variant.price_cents,
+            image: product.images?.[0]?.imageUrl || "",
+            quantity: item.quantity
+        });
+
+        totalAmount_cents += variant.price_cents * item.quantity;
+    }
+
+    // 3. Tính phí ship (Logic Backend tự tính để bảo mật)
+    const SHIPPING_FEE = 30000;
+    const FREESHIP_THRESHOLD = 300000;
+    let finalTotal = totalAmount_cents;
+    
+    // Nếu tổng đơn nhỏ hơn 300k thì cộng ship, ngược lại free
+    if (totalAmount_cents < FREESHIP_THRESHOLD) {
+        finalTotal += SHIPPING_FEE;
+    }
+
+    // 4. Tạo Order
+    const newOrder = await Order.create({
+        userId,
+        orderNumber: `ORD-${Date.now()}`, // Mã đơn hàng duy nhất
+        items: orderItems,
+        totalAmount_cents: finalTotal,
+        shippingAddress: orderData.shippingAddress,
+        phoneNumber: orderData.phoneNumber,
+        note: orderData.note,
+        paymentMethod: orderData.paymentMethod || "COD",
+        status: "pending"
+    });
+
+    // 5. Xóa giỏ hàng sau khi đặt thành công
+    cart.items = [];
+    await cart.save();
+
+    return newOrder;
 };
 
-// Hàm lấy lịch sử đơn hàng của user
+// --- CLIENT: LẤY ĐƠN HÀNG CỦA TÔI ---
 export const getMyOrdersService = async (userId) => {
-    return await Order.find({ userId }).sort({ createdAt: -1 });
+    return await Order.find({ userId }).sort({ createdAt: -1 }); // Mới nhất lên đầu
+};
+
+// --- ADMIN: LẤY TẤT CẢ ĐƠN HÀNG ---
+export const getAllOrdersService = async (query) => {
+    // query có thể là ?status=pending hoặc ?page=1
+    const filter = {};
+    if (query.status && query.status !== 'all') {
+        filter.status = query.status;
+    }
+
+    const orders = await Order.find(filter)
+        .populate('userId', 'name email') // Lấy thêm tên người mua
+        .sort({ createdAt: -1 });
+        
+    return orders;
+};
+
+// --- ADMIN: CẬP NHẬT TRẠNG THÁI ---
+export const updateOrderStatusService = async (orderId, status) => {
+    const order = await Order.findByIdAndUpdate(
+        orderId, 
+        { status }, 
+        { new: true }
+    );
+    if (!order) throw new Error("Order not found");
+    return order;
 };

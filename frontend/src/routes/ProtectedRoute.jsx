@@ -1,25 +1,47 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Spinner } from 'react-bootstrap';
 
-// Component này nhận vào allowedRoles (mảng các quyền được phép)
 const ProtectedRoute = ({ allowedRoles }) => {
-  const { user } = useAuth();
+    const { user, loading } = useAuth();
 
-  // 1. Chưa đăng nhập -> Đá về trang login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+    // 1. Đợi tải xong thông tin User
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+                <Spinner animation="border" variant="success" />
+            </div>
+        );
+    }
 
-  // 2. Có đăng nhập nhưng không đúng quyền -> Đá về trang "Không có quyền" hoặc Home
-  // Nếu allowedRoles rỗng thì ai logged in cũng vào được
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    alert("Bạn không có quyền truy cập trang này!");
-    return <Navigate to="/admin" replace />; // Hoặc trang 403
-  }
+    // 2. Nếu chưa đăng nhập -> Đá về Login
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
 
-  // 3. Hợp lệ -> Cho hiện nội dung
-  return <Outlet />;
+    // API /me trả về role là Object ({name: 'admin'}), còn Login trả về String ('admin')
+    // lấy ra chuỗi tên role chuẩn xác.
+    const userRole = user.role && typeof user.role === 'object' ? user.role.name : user.role;
+    // --------------------------------------------
+
+    // 3. Kiểm tra quyền
+    if (allowedRoles && !allowedRoles.includes(userRole)) {
+        return (
+            <div className="d-flex flex-column justify-content-center align-items-center vh-100 text-center animate-fade-in">
+                <h1 className="text-danger fw-bold display-1">403</h1>
+                <h4 className="mb-3">Truy cập bị từ chối</h4>
+                <p className="text-muted mb-4">
+                    Tài khoản <strong>{user.email}</strong> (Quyền: {userRole}) <br/>
+                    không được phép truy cập trang này.
+                </p>
+                <a href="/" className="btn btn-outline-primary rounded-pill px-4">Về trang chủ</a>
+            </div>
+        );
+    }
+
+    // 4. Hợp lệ -> Cho vào
+    return <Outlet />;
 };
 
 export default ProtectedRoute;

@@ -1,11 +1,11 @@
 import React from 'react';
-import { Container, Card, Button } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col } from 'react-bootstrap'; // Import đúng chỗ
 import { FaCheckCircle, FaHome, FaBoxOpen } from 'react-icons/fa';
 import { Link, useLocation } from 'react-router-dom';
 import '../../assets/styles/cart-checkout.css';
 
 const SuccessPage = () => {
-    // Lấy thông tin đơn hàng từ state được truyền qua navigate (nếu có)
+    // Lấy thông tin đơn hàng từ state được truyền qua navigate
     const location = useLocation();
     const orderData = location.state?.order;
 
@@ -52,12 +52,13 @@ const SuccessPage = () => {
                                     <span className="fw-bold text-success fs-5">{orderData?.totalAmount_cents?.toLocaleString()} đ</span>
                                 </div>
                             </div>
-
+                            
                             <div className="d-flex gap-3 justify-content-center">
                                 <Button as={Link} to="/" variant="outline-secondary" className="rounded-pill px-4">
                                     <FaHome className="me-2"/> Trang chủ
                                 </Button>
-                                <Button as={Link} to="/profile?tab=orders" variant="success" className="rounded-pill px-4 shadow-sm">
+                                {/* Chuyển hướng đến Profile Tab Orders (nếu bạn đã làm tab này, nếu chưa thì về profile thường) */}
+                                <Button as={Link} to="/profile" variant="success" className="rounded-pill px-4 shadow-sm">
                                     <FaBoxOpen className="me-2"/> Xem đơn hàng
                                 </Button>
                             </div>
@@ -68,8 +69,5 @@ const SuccessPage = () => {
         </div>
     );
 };
-
-// Cần import Row, Col để chạy
-import { Row, Col } from 'react-bootstrap';
 
 export default SuccessPage;

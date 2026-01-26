@@ -31,25 +31,29 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Gọi API lên server để hỏi: "Cookie tôi gửi có hợp lệ không?"
         const res = await userApi.getProfile();
         
         if (res.success) {
-          // Server bảo OK -> Set User
-          setUser(res.data);
-          // Đồng bộ lại localStorage cho chắc
-          localStorage.setItem('currentUser', JSON.stringify(res.data));
+          const userData = res.data;
+          
+          // Nếu role là object (do populate), ta chỉ lấy tên role (vd: "admin")
+          // Để toàn bộ ứng dụng chỉ việc xài chuỗi string, không bị lỗi object
+          if (userData.role && typeof userData.role === 'object') {
+              userData.role = userData.role.name; 
+          }
+          // --------------------------------
+
+          setUser(userData);
+          localStorage.setItem('currentUser', JSON.stringify(userData));
         } else {
-          // Server bảo không -> Logout
-          throw new Error("Auth failed");
+          throw new Error("Xác thực thất bại");
         }
       } catch {
-        // Lỗi 401 hoặc mạng -> Coi như chưa đăng nhập
-        console.log("User not authenticated or session expired.");
+        console.log("User chưa đăng nhập hoặc phiên hết hạn.");
         setUser(null);
         localStorage.removeItem('currentUser');
       } finally {
-        setLoading(false); // Dù thành công hay thất bại cũng tắt loading
+        setLoading(false);
       }
     };
 

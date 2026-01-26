@@ -1,27 +1,38 @@
 import express from "express";
-import { body } from "express-validator"; // Dùng để kiểm tra dữ liệu
-import { createOrder, getMyOrders } from "../controllers/order.controller.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { body } from "express-validator";
+import { 
+    createOrder, 
+    getMyOrders, 
+    getAllOrders, 
+    updateOrderStatus 
+} from "../controllers/order.controller.js";
+// Dùng verifyToken và isAdmin từ file middleware chuẩn của bạn
+import { verifyToken, isAdmin } from "../middlewares/auth.middleware.js"; 
 import { validateRequest } from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
-// Tất cả các route đơn hàng đều yêu cầu đăng nhập
-router.use(authMiddleware);
+// Tất cả route đều cần đăng nhập
+router.use(verifyToken);
 
-// 1. Tạo đơn hàng (Checkout)
+// --- CLIENT ROUTES ---
 router.post(
     "/",
     [
-        body("shippingAddress").notEmpty().withMessage("Shipping address is required"),
-        body("phoneNumber").notEmpty().withMessage("Phone number is required"),
-        // paymentMethod và note là optional (không bắt buộc) nên không cần check
+        body("shippingAddress").notEmpty().withMessage("Vui lòng nhập địa chỉ"),
+        body("phoneNumber").notEmpty().withMessage("Vui lòng nhập số điện thoại"),
     ],
     validateRequest,
     createOrder
 );
 
-// 2. Xem lịch sử đơn hàng của tôi
-router.get("/", getMyOrders);
+router.get("/my-orders", getMyOrders); // Đổi path thành /my-orders cho rõ ràng
+
+// --- ADMIN ROUTES ---
+// Admin xem tất cả đơn hàng
+router.get("/admin/all", isAdmin, getAllOrders);
+
+// Admin cập nhật trạng thái đơn hàng (VD: /api/orders/admin/:id/status)
+router.put("/admin/:id/status", isAdmin, updateOrderStatus);
 
 export default router;

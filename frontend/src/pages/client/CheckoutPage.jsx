@@ -11,7 +11,7 @@ import '../../assets/styles/cart-checkout.css';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { cartItems, refreshCart } = useCart();
+  const { cartItems, clearCart } = useCart();
   const { user, login } = useAuth(); // login dùng để refresh context
 
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -141,7 +141,7 @@ const CheckoutPage = () => {
           
           if (res.success) {
               toast.success("Đặt hàng thành công!");
-              refreshCart(); 
+              clearCart();
               navigate('/checkout/success', { state: { order: res.data } });
           }
 
