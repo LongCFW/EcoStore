@@ -3,6 +3,7 @@ import { Card, Badge } from "react-bootstrap";
 import { FaShoppingCart, FaEye, FaBolt, FaHeart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import '../../assets/styles/products.css'; 
+import AddToCartBtn from '../cart/AddToCartBtn';
 
 const ProductCard = ({ product, onQuickView }) => {
   return (
@@ -68,10 +69,14 @@ const ProductCard = ({ product, onQuickView }) => {
                     </span>
                 )}
             </div>
-            
-            <button className="btn btn-outline-success w-100 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2">
-                <FaShoppingCart /> Thêm
-            </button>
+
+                <AddToCartBtn 
+                productId={product.id} 
+                className="w-100 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2"
+                variant="outline-success" 
+                >                
+                  Thêm vào giỏ
+                </AddToCartBtn>
         </div>
       </Card.Body>
     </Card>

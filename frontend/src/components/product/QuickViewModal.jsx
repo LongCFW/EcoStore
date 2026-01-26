@@ -1,7 +1,8 @@
 import React, { useState } from 'react'; // Added useEffect
 import { Modal, Row, Col, Button, Badge } from 'react-bootstrap';
-import { FaShoppingCart, FaCheck, FaTimes, FaMinus, FaPlus } from 'react-icons/fa';
+import { FaShoppingCart, FaCheck, FaTimes, FaMinus, FaPlus, FaStar, FaTimes as FaClose } from 'react-icons/fa'; // Import đủ icon
 import { Link } from 'react-router-dom';
+import AddToCartBtn from '../cart/AddToCartBtn';
 
 const QuickViewModal = ({ show, handleClose, product }) => {
   const [quantity, setQuantity] = useState(1);
@@ -16,19 +17,35 @@ const QuickViewModal = ({ show, handleClose, product }) => {
   // Safe check for price to avoid toLocaleString error
   const displayPrice = product.salePrice || product.price || 0;
   const originalPrice = product.price || 0;
+  
+  // Mapping ID: Tùy vào product lấy từ đâu mà ID có thể là id hoặc _id
+  const productId = product.id || product._id;
+  
+  // Mapping Image & Category
+  const image = product.image || product.images?.[0]?.imageUrl || 'https://placehold.co/400';
+  const categoryName = typeof product.categoryId === 'object' ? product.categoryId?.name : 'Sản phẩm Eco';
+  // Check stock (nếu không có variants thì check stock, nếu có variants thì coi như còn hàng hoặc check variant đầu)
+  const isOutOfStock = product.stock <= 0 && (!product.variants || product.variants.length === 0);
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered className="quick-view-modal">
-      <Modal.Header closeButton className="border-0 position-absolute end-0 top-0 z-3"></Modal.Header>
-      <Modal.Body className="p-0">
-        <Row className="g-0">
+      {/* Nút đóng modal ở góc */}
+      <div className="position-absolute top-0 end-0 m-3" style={{zIndex: 10}}>
+          <Button variant="light" className="rounded-circle shadow-sm" onClick={handleClose}>
+              <FaClose />
+          </Button>
+      </div>
+
+      <Modal.Body className="p-0 rounded-4 overflow-hidden bg-white">
+        <Row className="g-0 h-100">
             {/* Left Column: Image */}
-            <Col md={6} className="bg-light d-flex align-items-center justify-content-center p-3">
-                <div className="position-relative w-100 h-100" style={{minHeight: '300px'}}>
+            <Col md={6} className="bg-light d-flex align-items-center justify-content-center p-4">
+                <div className="position-relative w-100 h-100 d-flex align-items-center justify-content-center" style={{minHeight: '300px'}}>
                     <img 
-                        src={product.image} 
+                        src={image} 
                         alt={product.name} 
-                        className="img-fluid rounded shadow-sm w-100 h-100 object-fit-contain" 
+                        className="img-fluid rounded shadow-sm" 
+                        style={{maxHeight: '400px', objectFit: 'contain'}}
                     />
                     {product.salePrice && (
                         <Badge bg="danger" className="position-absolute top-0 start-0 m-2 px-3 py-2">
@@ -42,14 +59,20 @@ const QuickViewModal = ({ show, handleClose, product }) => {
             <Col md={6} className="p-4 d-flex flex-column">
                 <div className="mb-2">
                     <Badge bg="success" className="bg-opacity-10 text-success border border-success me-2">
-                        {product.categoryName || 'Sản phẩm Eco'}
+                        {categoryName}
                     </Badge>
-                    <span className={`small ${product.stock !== 0 ? 'text-success' : 'text-danger'}`}>
-                        {product.stock !== 0 ? <><FaCheck className="me-1"/>Còn hàng</> : <><FaTimes className="me-1"/>Hết hàng</>}
+                    <span className={`small fw-bold ${!isOutOfStock ? 'text-success' : 'text-danger'}`}>
+                        {!isOutOfStock ? <><FaCheck className="me-1"/>Còn hàng</> : <><FaTimes className="me-1"/>Hết hàng</>}
                     </span>
                 </div>
 
-                <h3 className="fw-bold mb-3">{product.name}</h3>
+                <h3 className="fw-bold mb-2">{product.name}</h3>
+                
+                {/* Rating giả lập cho đẹp */}
+                <div className="d-flex align-items-center mb-3 text-warning small">
+                    {[...Array(5)].map((_, i) => <FaStar key={i} />)}
+                    <span className="text-muted ms-2">(4.8/5)</span>
+                </div>
                 
                 <div className="mb-4">
                     <span className="display-6 fw-bold text-success me-3">
@@ -62,30 +85,40 @@ const QuickViewModal = ({ show, handleClose, product }) => {
                     )}
                 </div>
 
-                <p className="text-muted small mb-4 flex-grow-1" style={{maxHeight: '100px', overflowY: 'auto'}}>
-                    {product.shortDescription || product.description || "Sản phẩm xanh, sạch, thân thiện với môi trường. Đảm bảo chất lượng và an toàn cho sức khỏe người tiêu dùng."}
+                <p className="text-muted small mb-4 flex-grow-1" style={{maxHeight: '100px', overflowY: 'auto', lineHeight: '1.6'}}>
+                    {product.shortDescription || product.description || "Sản phẩm xanh, sạch, thân thiện với môi trường..."}
                 </p>
 
                 {/* Action Area */}
-                <div className="pt-3 border-top">
+                <div className="pt-3 mt-auto">
                     <div className="d-flex gap-3 mb-3">
-                        <div className="input-group border rounded-pill overflow-hidden" style={{width: '120px'}}>
-                            <button className="btn btn-light border-0" onClick={() => handleQuantity('dec')}><FaMinus size={10}/></button>
+                        {/* Bộ chọn số lượng */}
+                        <div className="input-group border rounded-pill overflow-hidden" style={{width: '120px', height: '48px'}}>
+                            <button className="btn btn-light border-0 px-3" onClick={() => handleQuantity('dec')} disabled={quantity <= 1}><FaMinus size={10}/></button>
                             <input type="text" className="form-control border-0 text-center bg-white fw-bold p-0" value={quantity} readOnly />
-                            <button className="btn btn-light border-0" onClick={() => handleQuantity('inc')}><FaPlus size={10}/></button>
+                            <button className="btn btn-light border-0 px-3" onClick={() => handleQuantity('inc')}><FaPlus size={10}/></button>
                         </div>
-                        <Button variant="success" className="rounded-pill flex-grow-1 fw-bold shadow-sm">
-                            <FaShoppingCart className="me-2"/> Thêm vào giỏ
-                        </Button>
+                        
+                        {/* NÚT ADD TO CART THẬT */}
+                        <div className="flex-grow-1">
+                            <AddToCartBtn 
+                                productId={productId}
+                                quantity={quantity} // Truyền số lượng đang chọn
+                                className="w-100 rounded-pill fw-bold shadow-sm h-100"
+                                size="lg"
+                                disabled={isOutOfStock}
+                            >
+                            {isOutOfStock ? "Hết hàng" : "Thêm Ngay"}
+                            </AddToCartBtn>
+                        </div>
                     </div>
                     
-                    {/* FIX: Add onClick={handleClose} to close modal when navigating */}
                     <Link 
                         to={`/product/${product.slug}`} 
-                        className="text-center d-block text-decoration-none small text-muted hover-green"
+                        className="text-center d-block text-decoration-none small text-muted hover-green fw-medium"
                         onClick={handleClose} 
                     >
-                        Xem chi tiết sản phẩm &rarr;
+                        Xem chi tiết đầy đủ &rarr;
                     </Link>
                 </div>
             </Col>

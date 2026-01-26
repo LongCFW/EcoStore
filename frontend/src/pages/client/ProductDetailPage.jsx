@@ -6,6 +6,7 @@ import ProductCard from "../../components/product/ProductCard";
 import QuickViewModal from "../../components/product/QuickViewModal";
 import productApi from "../../services/product.service";
 import '../../assets/styles/products.css';
+import AddToCartBtn from '../../components/cart/AddToCartBtn';
 
 const ProductDetailPage = () => {
   const { slug } = useParams(); 
@@ -187,12 +188,16 @@ const ProductDetailPage = () => {
                         <input type="text" className="form-control border-0 text-center bg-white fw-bold" value={quantity} readOnly />
                         <button className="btn btn-light border-0" onClick={() => handleQuantity('inc')}><FaPlus size={12}/></button>
                     </div>
-                    <Button 
-                        variant="success" size="lg" className="rounded-pill px-5 fw-bold shadow-sm flex-grow-1"
-                        disabled={currentStock <= 0}
+                    <AddToCartBtn 
+                        productId={product._id} 
+                        quantity={quantity} 
+                        className="rounded-pill px-5 fw-bold shadow-sm flex-grow-1"
+                        variant="success"
+                        size="lg"
+                        disabled={currentStock <= 0} 
                     >
-                        <FaShoppingCart className="me-2"/> {currentStock > 0 ? "Thêm vào giỏ" : "Hết hàng"}
-                    </Button>
+                        {currentStock > 0 ? "Thêm vào giỏ" : "Hết hàng"}
+                    </AddToCartBtn>
                     <Button variant="outline-danger" className="rounded-circle p-0 d-flex align-items-center justify-content-center border-2" style={{width: '48px', height: '48px'}}>
                         <FaHeart />
                     </Button>

@@ -3,13 +3,14 @@ import { Navbar, Container, Nav, Form, Button, Badge, Dropdown, Offcanvas } from
 import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from '../../hooks/useAuth'; // Đảm bảo đường dẫn này đúng với cấu trúc dự án của bạn
+import { useCart } from '../../hooks/useCart';
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Lấy user và hàm logout từ AuthContext
   const { user, logout } = useAuth(); 
-
+  const { cartCount } = useCart();    
   // Logic kiểm tra login thật sự
   const isLoggedIn = !!user; 
   const userAvatar = user?.avatarUrl; // Lấy avatar từ user object
@@ -39,8 +40,12 @@ const Header = () => {
           {/* Giỏ hàng Mobile */}
           <div className="d-flex align-items-center gap-2 d-lg-none">
              <Link to="/cart" className="position-relative text-success">
-                <FaShoppingCart size={22} />
-                <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-light" style={{fontSize: '0.6rem'}}>3</Badge>
+                <FaShoppingCart size={18} />
+                {isLoggedIn && cartCount > 0 && (
+                  <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-2 border-white">
+                      {cartCount > 99 ? '99+' : cartCount}
+                  </Badge>
+                )}              
              </Link>
           </div>
 
@@ -77,8 +82,12 @@ const Header = () => {
                 <div className="d-flex align-items-center gap-3">
                     {/* Giỏ hàng */}
                     <Link to="/cart" className="position-relative btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center text-success cart-icon-hover" style={{width: 42, height: 42}}>
-                        <FaShoppingCart size={18} />
-                        <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-2 border-white">3</Badge>
+                        <FaShoppingCart size={18} />                        
+                        {isLoggedIn && cartCount > 0 && (
+                            <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-2 border-white">
+                                {cartCount > 99 ? '99+' : cartCount}
+                            </Badge>
+                        )}
                     </Link>
 
                     {/* --- USER ICON DROPDOWN (ĐÃ FIX) --- */}

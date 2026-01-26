@@ -1,82 +1,97 @@
+// backend/src/services/cart.service.js
 import Cart from "../models/cart.js";
 import Product from "../models/product.js";
 
-// Lấy giỏ hàng của user
+// Lấy giỏ hàng (Có logic tự dọn dẹp item rác)
 export const getCartService = async (userId) => {
-    // Tìm giỏ hàng và hiển thị chi tiết thông tin sản phẩm (name, price, image)
-    let cart = await Cart.findOne({ userId }).populate("items.productId", "name price_cents images slug");
+    let cart = await Cart.findOne({ userId }).populate("items.productId", "name price_cents images slug is_active");
 
-    // Nếu chưa có giỏ hàng, tạo một cái rỗng để trả về (tránh lỗi null ở frontend)
     if (!cart) {
         cart = await Cart.create({ userId, items: [] });
+        return cart;
     }
+
+    // Lọc bỏ các sản phẩm bị null (đã xóa khỏi DB Product)
+    // Dùng filter javascript thông thường vì ta đang cần trả về dữ liệu hiển thị
+    const validItems = cart.items.filter(item => item.productId !== null);
+
+    // Nếu có sự thay đổi (có rác), cập nhật lại DB bằng updateOne (tránh dùng save() để ko lỗi version)
+    if (validItems.length !== cart.items.length) {
+        await Cart.updateOne({ _id: cart._id }, { items: validItems });
+        cart.items = validItems; // Cập nhật lại biến cục bộ để trả về
+    }
+
     return cart;
 };
 
-// Thêm sản phẩm vào giỏ
+// Thêm vào giỏ (Giữ nguyên logic cũ nhưng tối ưu)
 export const addToCartService = async (userId, productId, quantity = 1) => {
-    // 1. Kiểm tra sản phẩm có tồn tại không
     const product = await Product.findById(productId);
     if (!product) throw new Error("Product not found");
 
-   // Tự động lấy biến thể đầu tiên (mặc định)
-    if (!product.variants || product.variants.length === 0) {
-        throw new Error("Product has no variant info");
-    }
-    const defaultVariant = product.variants[0]; 
-    const variantId = defaultVariant._id;
+    // Lấy variant mặc định
+    const defaultVariant = product.variants?.[0];
+    const variantId = defaultVariant ? defaultVariant._id : null;
 
-    // 2. Tìm giỏ hàng của user
     let cart = await Cart.findOne({ userId });
 
-    // Trường hợp 1: User chưa có giỏ hàng -> Tạo mới
     if (!cart) {
+        // Tạo mới nếu chưa có
         cart = await Cart.create({
             userId,
-            items: [{ productId, quantity }]
+            items: [{ productId, quantity, variantId }]
         });
     } else {
-        // Trường hợp 2: Giỏ hàng đã tồn tại -> Kiểm tra sản phẩm đã có trong giỏ chưa
-        const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
+        // Kiểm tra item đã tồn tại chưa
+        const itemIndex = cart.items.findIndex(p => p.productId.toString() === productId);
 
         if (itemIndex > -1) {
-            // SP đã có -> Cộng dồn số lượng
-            cart.items[itemIndex].quantity += quantity;
-            cart.items[itemIndex].variantId = variantId;
+            // Dùng $inc để cộng dồn số lượng (Atomic update) - Tránh lỗi race condition
+            await Cart.findOneAndUpdate(
+                { userId, "items.productId": productId },
+                { $inc: { "items.$.quantity": quantity } }
+            );
         } else {
-            // SP chưa có -> Thêm mới vào mảng
-            cart.items.push({ productId, variantId, quantity });
+            // Dùng $push để thêm mới (Atomic update)
+            await Cart.findOneAndUpdate(
+                { userId },
+                { $push: { items: { productId, variantId, quantity } } }
+            );
         }
-        await cart.save();
     }
 
-    return cart; // Trả về giỏ hàng mới nhất
+    // Trả về cart mới nhất đã populate
+    return await getCartService(userId);
 };
 
-// Cập nhật số lượng (Tăng/Giảm)
+// Cập nhật số lượng (Dùng $set thay vì save)
 export const updateCartItemService = async (userId, productId, quantity) => {
-    const cart = await Cart.findOne({ userId });
-    if (!cart) throw new Error("Cart not found");
-
-    const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
-    if (itemIndex > -1) {
-        if (quantity > 0) {
-            cart.items[itemIndex].quantity = quantity;
-        } else {
-            // Nếu số lượng <= 0 thì xóa luôn
-            cart.items.splice(itemIndex, 1);
-        }
-        await cart.save();
+    if (quantity <= 0) {
+        // Nếu số lượng <= 0 thì gọi hàm xóa
+        return await removeCartItemService(userId, productId);
     }
-    return cart;
+
+    // Dùng $set để cập nhật trực tiếp item cụ thể trong mảng
+    // "items.productId": productId -> Tìm item khớp
+    // "items.$.quantity": quantity -> Cập nhật quantity của item tìm thấy ($)
+    const updatedCart = await Cart.findOneAndUpdate(
+        { userId, "items.productId": productId },
+        { $set: { "items.$.quantity": quantity } },
+        { new: true } // Trả về document sau khi update
+    );
+
+    if (!updatedCart) throw new Error("Cart or Product not found");
+
+    return await getCartService(userId);
 };
 
-// Xóa sản phẩm khỏi giỏ
+// Xóa sản phẩm (Dùng $pull thay vì save - FIX LỖI VERSION ERROR)
 export const removeCartItemService = async (userId, productId) => {
-    const cart = await Cart.findOne({ userId });
-    if (cart) {
-        cart.items = cart.items.filter(item => item.productId.toString() !== productId);
-        await cart.save();
-    }
-    return cart;
+    // $pull: Kéo (xóa) phần tử ra khỏi mảng khớp điều kiện
+    await Cart.findOneAndUpdate(
+        { userId },
+        { $pull: { items: { productId: productId } } }
+    );
+
+    return await getCartService(userId);
 };

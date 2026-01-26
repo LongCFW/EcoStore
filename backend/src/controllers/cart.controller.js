@@ -46,9 +46,12 @@ export const updateCartItem = async (req, res, next) => {
 export const removeCartItem = async (req, res, next) => {
     try {
         const userId = req.user.userId;
-        const { productId } = req.params; // Lấy productId từ URL
+        const { productId } = req.params;
 
+        // Gọi service xóa
         const cart = await removeCartItemService(userId, productId);
+        
+        // Trả về cart mới nhất (đã populate)
         res.status(200).json({ success: true, message: "Item removed", data: cart });
     } catch (error) {
         next(error);
