@@ -7,7 +7,12 @@ export const login = async (req, res, next) => {
         const { email, password } = req.body;
 
         const result = await loginService(email, password);
-
+        res.cookie("token", result.token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "strict",
+            maxAge: 24 * 60 * 60 * 1000 // 1 ngày
+        });
         res.status(200).json({
             success: true,
             data: result,
@@ -183,6 +188,28 @@ export const changePassword = async (req, res, next) => {
         await user.save();
 
         res.json({ success: true, message: "Đổi mật khẩu thành công" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getMe = async (req, res, next) => {
+    try {
+        // req.user được tạo ra từ middleware verifyToken
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        const user = await User.findById(req.user.userId).populate('role', 'name');
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
     } catch (error) {
         next(error);
     }

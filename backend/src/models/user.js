@@ -10,7 +10,7 @@ const AddressSchema = new Schema({
     postalCode: String,
     country: String,
     isDefault: Boolean
-}, { _id: false });
+}, { _id: true });
 
 const UserSchema = new Schema({
     email: { type: String, unique: true },
@@ -18,17 +18,14 @@ const UserSchema = new Schema({
     name: String,
     phone: String,
     avatarUrl: String,
-
     role: { type: Schema.Types.ObjectId, ref: "Role" },
     status: { type: Number, default: 1 },
-
     addresses: [AddressSchema],    
     wishlist: [{ type: Schema.Types.ObjectId }],
     googleId: String,
     email_Verified: Boolean,
     lastLoginAt: Date,
     metadata: Object,
-
     createdAt: { type: Date, default: Date.now }
 });
 

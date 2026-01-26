@@ -6,18 +6,19 @@ const axiosClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true // trình duyệt tự gửi cookieHttpOnly
 });
 
 // INTERCEPTOR REQUEST: Gắn Token từ Cookie vào Header
-axiosClient.interceptors.request.use(async (config) => {
-  const token = Cookies.get('token'); // <--- Lấy từ Cookie
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+// axiosClient.interceptors.request.use(async (config) => {
+//   const token = Cookies.get('token'); // <--- Lấy từ Cookie
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
+//   return config;
+// }, (error) => {
+//   return Promise.reject(error);
+// });
 
 // INTERCEPTOR RESPONSE
 axiosClient.interceptors.response.use(

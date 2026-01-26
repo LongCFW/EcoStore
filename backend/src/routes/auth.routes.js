@@ -1,6 +1,6 @@
 import express from "express";
 import { body } from "express-validator";
-import { login, register, verifyReset, resetPassword, updateProfile, changePassword } from "../controllers/auth.controller.js";
+import { login, register, verifyReset, resetPassword, updateProfile, changePassword, getMe } from "../controllers/auth.controller.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
 import { updateAvatar } from '../controllers/auth.controller.js';
 import multer from 'multer';
@@ -58,9 +58,8 @@ router.post("/reset-password", [
 ], validateRequest, resetPassword);
 
 router.post('/upload-avatar', verifyToken, upload.single('avatar'), updateAvatar);
-// 1. Cập nhật thông tin cơ bản (Tên, SĐT)
 router.put('/profile/update', verifyToken, updateProfile);
-
-// 2. Đổi mật khẩu (Cần đăng nhập)
 router.put('/profile/change-password', verifyToken, changePassword);
+
+router.get("/me", verifyToken, getMe);
 export default router;

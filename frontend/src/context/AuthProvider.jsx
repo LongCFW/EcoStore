@@ -1,79 +1,72 @@
-// src/context/AuthProvider.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
-import { jwtDecode } from 'jwt-decode';
 import { AuthContext } from './AuthContext'; 
+import userApi from '../services/user.service'; // Đảm bảo đã có file này
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Hàm Logout
+  // 1. Hàm Logout (Gọi API logout nếu cần, hoặc chỉ xóa state)
   const logout = useCallback(() => {
-    Cookies.remove('token');
-    localStorage.removeItem('currentUser');
+    // Xóa user trong state
     setUser(null);
+    localStorage.removeItem('currentUser'); // Xóa cache thông tin user (nếu có)
+    
+    // Nếu backend có API logout để xóa cookie server, hãy gọi ở đây
+    // userApi.logout(); 
+    
+    // Điều hướng về login
     navigate('/login');
   }, [navigate]);
 
-  // 2. Hàm Login
-  const login = useCallback((userData, token, remember = false) => {
-    const cookieOptions = { secure: false };
-    if (remember) {
-        cookieOptions.expires = 7; 
-    }
-    Cookies.set('token', token, cookieOptions);
+  // 2. Hàm Login (Chỉ lưu thông tin user vào state/localStorage, Token đã nằm trong Cookie HttpOnly)
+  const login = useCallback((userData) => {
     localStorage.setItem('currentUser', JSON.stringify(userData));
     setUser(userData);
   }, []);
 
-  // 3. Check Auth khi F5
+  // 3. Check Auth bằng cách gọi API /me
   useEffect(() => {
-    const checkAuth = () => {
-      const token = Cookies.get('token');
-      const storedUser = localStorage.getItem('currentUser');
-
-      if (!token || !storedUser) {
-        setLoading(false);
-        return;
-      }
-
+    const checkAuth = async () => {
       try {
-        const decoded = jwtDecode(token);
-        const currentTime = Date.now() / 1000;
-        if (decoded.exp < currentTime) {
-          logout();
+        // Gọi API lên server để hỏi: "Cookie tôi gửi có hợp lệ không?"
+        const res = await userApi.getProfile();
+        
+        if (res.success) {
+          // Server bảo OK -> Set User
+          setUser(res.data);
+          // Đồng bộ lại localStorage cho chắc
+          localStorage.setItem('currentUser', JSON.stringify(res.data));
         } else {
-          setUser(JSON.parse(storedUser));
+          // Server bảo không -> Logout
+          throw new Error("Auth failed");
         }
-      } catch (error) {        
-        console.error("Invalid token:", error); 
-        logout();
+      } catch {
+        // Lỗi 401 hoặc mạng -> Coi như chưa đăng nhập
+        console.log("User not authenticated or session expired.");
+        setUser(null);
+        localStorage.removeItem('currentUser');
       } finally {
-        setLoading(false);
+        setLoading(false); // Dù thành công hay thất bại cũng tắt loading
       }
     };
-    checkAuth();
-  }, [logout]);
 
-  // Hàm này giúp cập nhật thông tin user ngay lập tức (cho Avatar, Tên, v.v.)
+    checkAuth();
+  }, []);
+
   const updateUser = useCallback((updatedData) => {
       setUser((prevUser) => {
           if (!prevUser) return null;
-          
           const newUser = { ...prevUser, ...updatedData };
-          
-          // Cập nhật cả LocalStorage để khi F5 không bị mất dữ liệu mới
           localStorage.setItem('currentUser', JSON.stringify(newUser));
-          
           return newUser;
       });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser,loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

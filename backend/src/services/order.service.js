@@ -30,11 +30,6 @@ export const createOrderService = async (userId, shippingData) => {
 
             // Trừ kho
             variant.stock -= item.quantity;
-            // KIỂM TRA HẾT HÀNG -> ẨN SẢN PHẨM 
-            if (variant.stock <= 0) {
-                variant.stock = 0; // Đảm bảo không âm
-                product.is_active = false; // Tự động ẩn sản phẩm (isActive = false)                                
-            }
             
             // Lưu sản phẩm (với session)
             await product.save({ session });
