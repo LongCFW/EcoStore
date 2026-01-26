@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { 
     FaTachometerAlt, FaBox, FaShoppingBag, FaUsers, 
-    FaChartBar, FaCogs , FaShieldAlt, FaLeaf
+    FaChartBar, FaCogs , FaShieldAlt, FaLeaf, FaBookOpen 
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -11,7 +11,7 @@ const AdminSidebar = ({ isOpen, closeSidebar }) => {
 
   const menuItems = [
     { path: '/admin', label: 'Dashboard', icon: <FaTachometerAlt />, roles: ['admin', 'manager', 'staff'] },
-    { path: '/admin/categories', label: 'Danh mục', icon: <FaBox />, roles: ['admin', 'manager'] },
+    { path: '/admin/categories', label: 'Danh mục', icon: <FaBookOpen />, roles: ['admin', 'manager'] },
     { path: '/admin/products', label: 'Sản phẩm', icon: <FaBox />, roles: ['admin', 'manager'] },
     { path: '/admin/orders', label: 'Đơn hàng', icon: <FaShoppingBag />, roles: ['admin', 'manager', 'staff'] },
     { path: '/admin/customers', label: 'Khách hàng', icon: <FaUsers />, roles: ['admin', 'manager'] },
