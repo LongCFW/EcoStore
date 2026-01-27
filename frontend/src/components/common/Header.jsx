@@ -1,26 +1,38 @@
 import React, { useState } from "react";
 import { Navbar, Container, Nav, Form, Button, Badge, Dropdown, Offcanvas } from "react-bootstrap";
 import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart } from "react-icons/fa";
-import { Link, NavLink } from "react-router-dom";
-import { useAuth } from '../../hooks/useAuth'; // Đảm bảo đường dẫn này đúng với cấu trúc dự án của bạn
+import { Link, NavLink, useNavigate } from "react-router-dom"; // Import useNavigate
+import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-
-  // Lấy user và hàm logout từ AuthContext
   const { user, logout } = useAuth(); 
   const { cartCount } = useCart();    
-  // Logic kiểm tra login thật sự
   const isLoggedIn = !!user; 
-  const userAvatar = user?.avatarUrl; // Lấy avatar từ user object
-  const userName = user?.name || "User"; // Lấy tên user
+  const userAvatar = user?.avatarUrl; 
+  const userName = user?.name || "User";
+
+  // --- LOGIC TÌM KIẾM MỚI ---
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = (e) => {
+      e.preventDefault(); // Chặn reload trang
+      if (searchTerm.trim()) {
+          // Chuyển hướng sang trang Products kèm query param ?search=...
+          navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+          setShowMobileMenu(false); // Đóng menu mobile nếu đang mở
+          setSearchTerm(""); // (Tuỳ chọn) Xóa ô tìm kiếm sau khi enter
+      }
+  };
+  // --------------------------
 
   return (
     <>
       <Navbar expand="lg" className="sticky-top py-3" style={{ zIndex: 1020, backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
         <Container>
-          {/* 1. LOGO */}
+          {/* ... (Phần Logo giữ nguyên) ... */}
           <Navbar.Brand as={Link} to="/" className="fw-bold fs-3 d-flex align-items-center gap-2 me-lg-5">
             <div className="bg-success bg-opacity-10 p-2 rounded-circle d-flex align-items-center justify-content-center">
                <FaLeaf className="text-success" />
@@ -28,7 +40,7 @@ const Header = () => {
             <span className="text-success">EcoStore</span>
           </Navbar.Brand>
 
-          {/* Nút Mobile Menu */}
+          {/* ... (Nút Mobile & Cart Mobile giữ nguyên) ... */}
           <Button 
             variant="link" 
             className="d-lg-none text-success border-0 fs-2 p-0 ms-auto me-3"
@@ -37,7 +49,6 @@ const Header = () => {
             <FaBars />
           </Button>
 
-          {/* Giỏ hàng Mobile */}
           <div className="d-flex align-items-center gap-2 d-lg-none">
              <Link to="/cart" className="position-relative text-success">
                 <FaShoppingCart size={18} />
@@ -49,38 +60,36 @@ const Header = () => {
              </Link>
           </div>
 
-          {/* 2. MENU DESKTOP */}
           <Navbar.Collapse id="basic-navbar-nav" className="d-none d-lg-flex">
-            {/* Search Bar */}
+            {/* --- SEARCH BAR (DESKTOP) --- */}
             <div className="mx-auto w-100 px-lg-5" style={{ maxWidth: '600px' }}>
-                <Form className="d-flex position-relative w-100">
+                <Form className="d-flex position-relative w-100" onSubmit={handleSearch}>
                     <Form.Control
                         type="search"
                         placeholder="Tìm kiếm sản phẩm xanh..."
                         className="rounded-pill border-0 bg-light py-2 ps-4 pe-5 shadow-sm"
                         style={{ fontSize: '0.95rem' }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    <Button variant="link" className="position-absolute top-50 end-0 translate-middle-y text-success pe-3">
+                    <Button type="submit" variant="link" className="position-absolute top-50 end-0 translate-middle-y text-success pe-3">
                         <FaSearch />
                     </Button>
                 </Form>
             </div>
 
-            {/* Menu Links & Actions */}
+            {/* ... (Phần Menu Links & User Actions giữ nguyên) ... */}
             <div className="d-flex align-items-center gap-4">
-                {/* Menu Text */}
                 <Nav className="d-flex gap-3 fw-medium">
                     <NavLink to="/" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Trang chủ</NavLink>
                     <NavLink to="/products" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Sản phẩm</NavLink>
                     <NavLink to="/offers" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Ưu đãi</NavLink>
                     <NavLink to="/about" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Giới thiệu</NavLink>
                 </Nav>
-
+                
                 <div className="vr text-secondary opacity-25" style={{height: '25px'}}></div>
 
-                {/* Actions Icons */}
                 <div className="d-flex align-items-center gap-3">
-                    {/* Giỏ hàng */}
                     <Link to="/cart" className="position-relative btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center text-success cart-icon-hover" style={{width: 42, height: 42}}>
                         <FaShoppingCart size={18} />                        
                         {isLoggedIn && cartCount > 0 && (
@@ -90,23 +99,17 @@ const Header = () => {
                         )}
                     </Link>
 
-                    {/* --- USER ICON DROPDOWN (ĐÃ FIX) --- */}
+                    {/* User Dropdown giữ nguyên */}
                     <Dropdown align="end">
                         <Dropdown.Toggle variant="transparent" className="p-0 border-0 after-none">
                             <div className="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm user-icon-hover border border-success overflow-hidden" style={{width: 42, height: 42, padding: 0}}>
                                 {isLoggedIn && userAvatar ? (
-                                    <img 
-                                      src={userAvatar} 
-                                      alt="User" 
-                                      className="w-100 h-100" 
-                                      style={{ objectFit: 'cover' }} // <--- FIX LỖI MÉO ẢNH TẠI ĐÂY
-                                    />
+                                    <img src={userAvatar} alt="User" className="w-100 h-100" style={{ objectFit: 'cover' }} />
                                 ) : (
                                     <FaUserCircle size={24} className="text-success"/> 
                                 )}
                             </div>
                         </Dropdown.Toggle>
-
                         <Dropdown.Menu className="border-0 shadow-lg p-2 mt-3 rounded-4 animate-slide-up" style={{minWidth: '240px'}}>
                             {isLoggedIn ? (
                                 <>
@@ -127,12 +130,8 @@ const Header = () => {
                                         <small className="text-muted">Đăng nhập để mua sắm dễ dàng hơn</small>
                                     </div>
                                     <div className="p-2 d-grid gap-2">
-                                        <Button as={Link} to="/login" variant="success" className="rounded-pill fw-bold btn-sm shadow-sm">
-                                            <FaSignInAlt className="me-2"/> Đăng nhập
-                                        </Button>
-                                        <Button as={Link} to="/register" variant="outline-success" className="rounded-pill fw-bold btn-sm">
-                                            <FaUserPlus className="me-2"/> Đăng ký
-                                        </Button>
+                                        <Button as={Link} to="/login" variant="success" className="rounded-pill fw-bold btn-sm shadow-sm"><FaSignInAlt className="me-2"/> Đăng nhập</Button>
+                                        <Button as={Link} to="/register" variant="outline-success" className="rounded-pill fw-bold btn-sm"><FaUserPlus className="me-2"/> Đăng ký</Button>
                                     </div>
                                 </>
                             )}
@@ -144,7 +143,7 @@ const Header = () => {
         </Container>
       </Navbar>
 
-      {/* MOBILE MENU - GIỮ NGUYÊN */}
+      {/* MOBILE MENU (ĐÃ THÊM LOGIC SEARCH) */}
       <Offcanvas show={showMobileMenu} onHide={() => setShowMobileMenu(false)} placement="end" className="border-0 rounded-start-4">
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title className="fw-bold text-success d-flex align-items-center gap-2">
@@ -152,10 +151,17 @@ const Header = () => {
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body className="d-flex flex-column px-4">
-            <Form className="mb-4 mt-2">
-                <Form.Control type="search" placeholder="Tìm kiếm..." className="rounded-pill bg-light border-0 py-2" />
+            <Form className="mb-4 mt-2" onSubmit={handleSearch}>
+                <Form.Control 
+                    type="search" 
+                    placeholder="Tìm kiếm..." 
+                    className="rounded-pill bg-light border-0 py-2" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </Form>
 
+            {/* ... (Các phần còn lại của mobile menu giữ nguyên) ... */}
             <Nav className="flex-column gap-3 fs-5 fw-medium">
                 <Nav.Link as={Link} to="/" onClick={() => setShowMobileMenu(false)} className="border-bottom pb-2">Trang chủ</Nav.Link>
                 <Nav.Link as={Link} to="/products" onClick={() => setShowMobileMenu(false)} className="border-bottom pb-2">Sản phẩm</Nav.Link>
@@ -169,7 +175,7 @@ const Header = () => {
                         <Button as={Link} to="/profile" variant="outline-dark" className="justify-content-center d-flex align-items-center gap-2 py-2 rounded-pill">
                             <FaUserCircle /> Quản lý tài khoản
                         </Button>
-                        <Button variant="danger" className="justify-content-center d-flex align-items-center gap-2 py-2 rounded-pill">
+                        <Button variant="danger" className="justify-content-center d-flex align-items-center gap-2 py-2 rounded-pill" onClick={() => { logout(); setShowMobileMenu(false); }}>
                             <FaSignOutAlt /> Đăng xuất
                         </Button>
                     </div>

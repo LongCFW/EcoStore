@@ -70,6 +70,13 @@ const ProductListPage = () => {
       const prices = searchParams.getAll("price"); 
       const sort = searchParams.get("sort") || "default";
       const page = parseInt(searchParams.get("page") || "1");
+      const searchTerm = searchParams.get("search");
+
+      // 0. Filter Search (MỚI)
+      if (searchTerm) {
+          const lowerTerm = searchTerm.toLowerCase();
+          result = result.filter(p => p.name.toLowerCase().includes(lowerTerm));
+      }
 
       // 1. Filter Category
       if (catIds.length > 0) {
