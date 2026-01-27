@@ -14,7 +14,6 @@
     position: relative;
 }
 
-/* Lớp phủ gradient đen/xanh để chữ nổi bật */
 .hero-overlay {
     position: absolute;
     inset: 0;
@@ -28,6 +27,26 @@
     max-width: 600px;
     color: white;
     z-index: 2;
+}
+
+/* Animations */
+.animate-slide-up {
+    animation: slideUp 0.8s ease-out;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 /* --- CATEGORY CIRCLES --- */
@@ -51,10 +70,13 @@
     background: white;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .category-card:hover .cat-img-wrapper {
-    border-color: var(--eco-primary);
+    border-color: #2e7d32; /* Eco primary color */
     box-shadow: 0 8px 20px rgba(46, 125, 50, 0.3);
 }
 
@@ -69,32 +91,13 @@
     transform: scale(1.1);
 }
 
-/* --- PROMO BANNER --- */
-.promo-banner {
-    background: linear-gradient(135deg, #2e7d32 0%, #004d40 100%);
-    border-radius: 20px;
-    position: relative;
-    overflow: hidden;
-    color: white;
-}
-
-.promo-circle {
-    position: absolute;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50%;
-}
-
 /* --- SECTION HEADERS --- */
 .section-title {
     position: relative;
     display: inline-block;
     margin-bottom: 30px;
     font-weight: 800;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: transparent; /* Fallback */
+    color: #2e7d32;
 }
 
 .section-title::after {
@@ -105,7 +108,7 @@
     transform: translateX(-50%);
     width: 50px;
     height: 4px;
-    background: var(--gradient-main);
+    background: #2e7d32;
     border-radius: 2px;
 }
 
@@ -129,7 +132,11 @@
     object-fit: cover;
 }
 
-/* --- MOBILE RESPONSIVE --- */
+.hover-green:hover {
+    color: #2e7d32 !important;
+}
+
+/* --- RESPONSIVE --- */
 @media (max-width: 768px) {
     .hero-slide {
         height: 350px;
@@ -139,7 +146,7 @@
     .hero-overlay {
         padding-left: 20px;
         padding-right: 20px;
-        background: rgba(0,0,0,0.5); /* Mobile tối hơn chút để dễ đọc */
+        background: rgba(0,0,0,0.5);
         align-items: center;
         justify-content: center;
         text-align: center;

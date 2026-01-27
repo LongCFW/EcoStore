@@ -3,8 +3,8 @@ import axiosClient from './axiosClient';
 
 const productApi = {
   // Lấy tất cả sản phẩm
-  getAll: () => {
-    return axiosClient.get('/products'); 
+  getAll: (params) => {
+    return axiosClient.get('/products', { params }); 
     // Nó sẽ nối với baseURL thành: http://localhost:5000/api/products
   },
 
