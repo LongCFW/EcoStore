@@ -1,27 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Import thêm useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination, Spinner } from 'react-bootstrap';
 import { FaSearch, FaFilter, FaEye, FaUnlock, FaLock, FaDownload, FaUsers } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom'; // 1. Import
 import CustomerDetailModal from '../../components/admin/CustomerDetailModal';
 import axiosClient from '../../services/axiosClient';
 import '../../assets/styles/admin.css';
 
 const CustomerManager = () => {
+  const [searchParams, setSearchParams] = useSearchParams(); // 2. Hook URL
+
+  // --- 3. LẤY GIÁ TRỊ TỪ URL (Thay vì useState) ---
+  const searchTerm = searchParams.get('search') || '';
+  const filterStatus = searchParams.get('status') || 'All';
+  const currentPage = parseInt(searchParams.get('page') || '1');
+
+  // State dữ liệu (chỉ giữ lại những cái cần thiết cho Data)
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // State Filter & Pagination
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
 
-  // State Modal
+  // State Modal (Modal không cần đưa lên URL)
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // --- 1. FIX WARNING: DÙNG USECALLBACK CHO FETCH DATA ---
-  // useCallback giúp hàm này không bị tạo lại mỗi lần render trừ khi dependency thay đổi
+  // --- 4. FETCH DATA ---
   const fetchUsers = useCallback(async () => {
       setLoading(true);
       try {
@@ -42,17 +45,38 @@ const CustomerManager = () => {
       } finally {
           setLoading(false);
       }
-  }, [currentPage, searchTerm, filterStatus]); // Hàm sẽ chỉ tạo lại khi 3 biến này thay đổi
+  }, [currentPage, searchTerm, filterStatus]); // Dependency chuẩn: Khi URL đổi -> Gọi lại API
 
-  // useEffect bây giờ chỉ cần phụ thuộc vào fetchUsers (đã an toàn nhờ useCallback)
+  // Debounce effect để tránh gọi API liên tục khi gõ tìm kiếm
   useEffect(() => {
       const timeout = setTimeout(() => {
           fetchUsers();
-      }, 500); // Debounce 500ms
+      }, 500); 
       return () => clearTimeout(timeout);
   }, [fetchUsers]); 
 
-  // --- 2. HÀM XỬ LÝ ---
+  // --- 5. CÁC HÀM UPDATE URL (Thay thế setState cũ) ---
+  const handlePageChange = (page) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('page', page);
+      setSearchParams(newParams);
+  };
+
+  const handleSearchChange = (e) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('search', e.target.value);
+      newParams.set('page', 1); // Reset về trang 1 khi tìm kiếm
+      setSearchParams(newParams);
+  };
+
+  const handleFilterChange = (e) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('status', e.target.value);
+      newParams.set('page', 1); // Reset về trang 1 khi lọc
+      setSearchParams(newParams);
+  };
+
+  // --- 6. ACTIONS (LOGIC MODAL & KHÓA TK GIỮ NGUYÊN) ---
   const handleViewUser = (user) => {
     setSelectedUser(user);
     setShowModal(true);
@@ -75,10 +99,6 @@ const CustomerManager = () => {
     }
   };
 
-  const handlePageChange = (page) => setCurrentPage(page);
-  const handleSearchChange = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
-  const handleFilterChange = (e) => { setFilterStatus(e.target.value); setCurrentPage(1); };
-
   return (
     <div className="animate-fade-in">
       {/* HEADER */}
@@ -92,7 +112,7 @@ const CustomerManager = () => {
         </Button>
       </div>
 
-      {/* FILTER BAR */}
+      {/* FILTER BAR (Đã gắn hàm handle mới) */}
       <div className="table-card p-3 mb-4">
           <Row className="g-3">
               <Col md={5}>
@@ -102,13 +122,17 @@ const CustomerManager = () => {
                         type="text" 
                         placeholder="Tìm kiếm theo tên, email, sđt..." 
                         className="border-start-0 shadow-none"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
+                        value={searchTerm} // Value từ URL
+                        onChange={handleSearchChange} // Gọi hàm update URL
                       />
                   </InputGroup>
               </Col>
               <Col md={3}>
-                  <Form.Select className="shadow-none" value={filterStatus} onChange={handleFilterChange}>
+                  <Form.Select 
+                    className="shadow-none" 
+                    value={filterStatus} // Value từ URL
+                    onChange={handleFilterChange} // Gọi hàm update URL
+                  >
                       <option value="All">Tất cả trạng thái</option>
                       <option value="Active">Đang hoạt động</option>
                       <option value="Locked">Bị khóa</option>
@@ -143,12 +167,7 @@ const CustomerManager = () => {
                         <tr key={user._id}>
                             <td className="ps-4">
                                 <div className="d-flex align-items-center gap-3">
-                                    <img 
-                                        src={user.avatarUrl || "https://via.placeholder.com/150"} 
-                                        alt={user.name} 
-                                        className="rounded-circle border object-fit-cover" 
-                                        style={{width: 45, height: 45}}
-                                    />
+                                    <img src={user.avatarUrl || "https://via.placeholder.com/150"} alt={user.name} className="rounded-circle border object-fit-cover" style={{width: 45, height: 45}} />
                                     <div>
                                         <div className="fw-bold" style={{color: 'var(--admin-text)'}}>{user.name}</div>
                                         <small className="text-muted text-uppercase" style={{fontSize: '0.7rem'}}>ID: {user._id.slice(-6)}</small>
@@ -164,15 +183,9 @@ const CustomerManager = () => {
                                     {user.role?.name || 'Customer'}
                                 </Badge>
                             </td>
-                            <td className="text-center">
-                                {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                            </td>
+                            <td className="text-center">{new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>
                             <td>
-                                {user.status === 1 ? (
-                                    <Badge bg="success" className="rounded-pill px-3 bg-opacity-75">Active</Badge>
-                                ) : (
-                                    <Badge bg="danger" className="rounded-pill px-3 bg-opacity-75">Locked</Badge>
-                                )}
+                                {user.status === 1 ? <Badge bg="success" className="rounded-pill px-3 bg-opacity-75">Active</Badge> : <Badge bg="danger" className="rounded-pill px-3 bg-opacity-75">Locked</Badge>}
                             </td>
                             <td className="text-end pe-4">
                                 <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-primary hover-scale me-2" onClick={() => handleViewUser(user)}>
@@ -180,13 +193,9 @@ const CustomerManager = () => {
                                 </Button>
                                 {user.role?.name !== 'admin' && (
                                     user.status === 1 ? (
-                                        <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-danger hover-scale" onClick={() => handleToggleStatus(user._id, 1)} title="Khóa">
-                                            <FaLock/>
-                                        </Button>
+                                        <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-danger hover-scale" onClick={() => handleToggleStatus(user._id, 1)} title="Khóa"><FaLock/></Button>
                                     ) : (
-                                        <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-success hover-scale" onClick={() => handleToggleStatus(user._id, 0)} title="Mở khóa">
-                                            <FaUnlock/>
-                                        </Button>
+                                        <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-success hover-scale" onClick={() => handleToggleStatus(user._id, 0)} title="Mở khóa"><FaUnlock/></Button>
                                     )
                                 )}
                             </td>
@@ -198,29 +207,18 @@ const CustomerManager = () => {
               </tbody>
           </Table>
           
-          {/* 3. KHÔI PHỤC PAGINATION GỐC ĐẸP MẮT */}
+          {/* PAGINATION */}
           {totalPages > 1 && (
               <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
                   <Pagination className="eco-pagination mb-2">
-                      <Pagination.Prev 
-                        onClick={() => handlePageChange(currentPage - 1)} 
-                        disabled={currentPage === 1}
-                      />
+                      <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
                       {[...Array(totalPages)].map((_, idx) => (
-                          <Pagination.Item 
-                            key={idx + 1} 
-                            active={idx + 1 === currentPage}
-                            onClick={() => handlePageChange(idx + 1)}
-                          >
+                          <Pagination.Item key={idx + 1} active={idx + 1 === currentPage} onClick={() => handlePageChange(idx + 1)}>
                               {idx + 1}
                           </Pagination.Item>
                       ))}
-                      <Pagination.Next 
-                        onClick={() => handlePageChange(currentPage + 1)} 
-                        disabled={currentPage === totalPages}
-                      />
+                      <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
                   </Pagination>
-                  
                   <small className="text-muted">
                       Hiển thị trang {currentPage} trên tổng số {totalPages} trang
                   </small>

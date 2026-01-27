@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination, Spinner } from 'react-bootstrap';
-import { FaSearch, FaPlus, FaEdit, FaTrash, FaFilter, FaBox } from 'react-icons/fa';
+import { FaSearch, FaPlus, FaEdit, FaTrash, FaBox } from 'react-icons/fa';
 import { useSearchParams } from 'react-router-dom';  
 import ProductModal from '../../components/admin/ProductModal';
 import productApi from '../../services/product.service';
@@ -8,19 +8,19 @@ import categoryApi from '../../services/category.service';
 import '../../assets/styles/admin.css';
 
 const ProductManager = () => {
-  const [searchParams, setSearchParams] = useSearchParams(); // Hook quản lý URL
+  const [searchParams, setSearchParams] = useSearchParams(); 
   
+  // --- 1. LẤY GIÁ TRỊ TỪ URL (Thay vì useState) ---
+  const searchTerm = searchParams.get('search') || '';
+  const filterCategory = searchParams.get('category') || 'All';
+  const currentPage = parseInt(searchParams.get('page') || '1');
+  const itemsPerPage = 5;
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // State tìm kiếm & phân trang
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('All');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  // --- 1. LOAD DATA ---
+  // --- 2. LOAD DATA ---
   useEffect(() => {
       fetchData();
   }, []);
@@ -33,9 +33,9 @@ const ProductManager = () => {
               categoryApi.getAll({ params: { is_active: true } })
           ]);
 
-
           const productList = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.products || []);
           setProducts(productList);
+          
           const categoryList = Array.isArray(catRes.data) ? catRes.data : (catRes.data?.categories || catRes.categories || []);
           setCategories(categoryList);
       } catch (error) {
@@ -46,30 +46,32 @@ const ProductManager = () => {
       }
   };
 
-  // --- 2. XỬ LÝ URL MODAL (Create/Edit) ---
-  
-  // Kiểm tra URL để xác định có mở Modal không và mở chế độ nào
+  // --- 3. XỬ LÝ MODAL TỪ URL ---
   const showCreateModal = searchParams.get('action') === 'create';
   const editId = searchParams.get('edit');
-  const showEditModal = !!editId; // Có ID là đang sửa
+  const showEditModal = !!editId;
   const editingProduct = editId ? products.find(p => p._id === editId) : null;
 
-  // Hàm mở Modal Thêm Mới -> Cập nhật URL
   const handleAddNew = () => {
-      setSearchParams({ action: 'create' });
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('action', 'create');
+      setSearchParams(newParams);
   };
 
-  // Hàm mở Modal Sửa -> Cập nhật URL
   const handleEdit = (product) => {
-      setSearchParams({ edit: product._id });
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('edit', product._id);
+      setSearchParams(newParams);
   };
 
-  // Hàm Đóng Modal -> Xóa params URL
-  const handleCloseModal = () => {
-      setSearchParams({});
+  const handleCloseModal = () => {      
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('action');
+      newParams.delete('edit');
+      setSearchParams(newParams);
   };
 
-  // --- 3. LOGIC CRUD (Giữ nguyên, chỉ sửa đoạn đóng modal) ---
+  // --- 4. LOGIC CRUD ---
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
         try {
@@ -78,7 +80,6 @@ const ProductManager = () => {
             alert("Xóa thành công!");
         } catch (error) {
             console.error("Delete error:", error);
-            // Check lỗi 401/403 để báo user
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                 alert("Bạn không có quyền xóa sản phẩm này (Unauthorized).");
             } else {
@@ -91,8 +92,6 @@ const ProductManager = () => {
  const handleSave = async (formData) => {
     try {
         let savedProduct;
-        
-        // 1. GỌI API
         if (formData.id) { // UPDATE
             const res = await productApi.update(formData.id, formData);
             savedProduct = res.data?.data || res.data;
@@ -101,24 +100,17 @@ const ProductManager = () => {
             savedProduct = res.data?.data || res.data;
         }
 
-        // --- SỬA LẠI ĐOẠN NÀY ---
-        // Lấy ID từ savedProduct.categoryId (chính xác là cái ID "6966..." trong log của bạn)
+        // Map category object để hiển thị ngay lập tức
         const categoryIdToFind = savedProduct.categoryId;
-
-        // Tìm object danh mục trong danh sách categories có sẵn
         const categoryObj = categories.find(c => c._id === categoryIdToFind);
         
         if (categoryObj) {
-            // Gán đè categoryId bằng object đầy đủ
-            // Tạo ra một object mới hoàn toàn để React nhận biết thay đổi
             savedProduct = { 
                 ...savedProduct, 
                 categoryId: categoryObj 
             };
         }
-        // ------------------------
 
-        // 3. CẬP NHẬT STATE
         if (formData.id) {
             setProducts(prev => prev.map(p => p._id === savedProduct._id ? savedProduct : p));
             alert("Cập nhật thành công!");
@@ -138,7 +130,7 @@ const ProductManager = () => {
     }
   };
 
-  // --- 4. FILTER & PAGINATION ---
+  // --- 5. FILTER & PAGINATION LOGIC ---
   const filteredProducts = products.filter(item => {
       const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
       const catName = item.categoryId?.name || 'N/A';
@@ -151,9 +143,28 @@ const ProductManager = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
 
-  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+  // --- 6. CÁC HÀM UPDATE URL ---
+  const handlePageChange = (pageNumber) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('page', pageNumber);
+      setSearchParams(newParams);
+  };
 
- // Lọc ra các brand không rỗng và loại bỏ trùng lặp
+  const handleSearchChange = (e) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('search', e.target.value);
+      newParams.set('page', 1); 
+      setSearchParams(newParams);
+  };
+
+  const handleCategoryChange = (e) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('category', e.target.value);
+      newParams.set('page', 1); 
+      setSearchParams(newParams);
+  };
+
+ // Lọc brand unique
   const uniqueBrands = React.useMemo(() => {      
       const brands = products
           .map(p => p.brand)
@@ -179,21 +190,21 @@ const ProductManager = () => {
           <Row className="g-3 align-items-center">
               <Col md={4}>
                   <InputGroup>
-                      <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
+                      <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>                      
                       <Form.Control 
                         type="text" 
                         placeholder="Tìm kiếm..." 
                         className="border-start-0 shadow-none"
-                        value={searchTerm}
-                        onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
+                        value={searchTerm} 
+                        onChange={handleSearchChange} 
                       />
                   </InputGroup>
               </Col>
-              <Col md={3}>
+              <Col md={3}>                  
                   <Form.Select 
                     className="shadow-none" 
-                    value={filterCategory}
-                    onChange={(e) => {setFilterCategory(e.target.value); setCurrentPage(1);}}
+                    value={filterCategory} 
+                    onChange={handleCategoryChange}
                   >
                       <option value="All">Tất cả danh mục</option>
                       {categories.map(cat => (
@@ -219,15 +230,13 @@ const ProductManager = () => {
               </thead>
               <tbody>
                   {loading ? (
-                      <tr><td colSpan="5" className="text-center py-5"><Spinner animation="border" variant="success"/></td></tr>
+                      <tr><td colSpan="7" className="text-center py-5"><Spinner animation="border" variant="success"/></td></tr>
                   ) : currentItems.length > 0 ? (
                       currentItems.map((item) => {
-                        // Tính tổng tồn kho ngay tại đây để dùng cho logic hiển thị
                         const currentStock = item.variants?.length > 0 
                             ? item.variants.reduce((sum, v) => sum + v.stock, 0) 
                             : (item.stock || 0);
                         
-                        // Logic xác định hết hàng: Tồn kho <= 0 HOẶC is_active là false
                         const isOutOfStock = currentStock <= 0 || item.is_active === false;
 
                         return (
@@ -243,15 +252,15 @@ const ProductManager = () => {
                                         />
                                         <div>
                                             <div className="fw-bold text-truncate" style={{maxWidth: '200px', color: 'var(--admin-text)'}}>{item.name}</div>
-                                                <div className="text-muted small d-flex gap-2">                                            
-                                                    <span>SKU: {item.variants?.[0]?.sku || item.sku || 'N/A'}</span>                                                     
+                                                <div className="text-muted small d-flex gap-2">                                                     
+                                                    <span>SKU: {item.variants?.[0]?.sku || item.sku || 'N/A'}</span>                                                                                             
                                                     {item.variants?.[0]?.name && (
                                                         <Badge bg="secondary" className="fw-normal py-0 px-2" style={{fontSize: '0.7em'}}>
                                                             {item.variants[0].name}
                                                         </Badge>
                                                      )}
                                                 </div>
-                                        </div>
+                                            </div>
                                     </div>
                                 </td>
                                 <td>
@@ -296,7 +305,7 @@ const ProductManager = () => {
                       })
                   ) : (
                       <tr>
-                          <td colSpan="5" className="text-center py-5 text-muted">
+                          <td colSpan="7" className="text-center py-5 text-muted">
                               <FaBox size={40} className="mb-3 opacity-50"/><br/>
                               Không tìm thấy dữ liệu.
                           </td>

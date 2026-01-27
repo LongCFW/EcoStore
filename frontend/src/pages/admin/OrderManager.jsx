@@ -5,35 +5,38 @@ import OrderDetailModal from '../../components/admin/OrderDetailModal';
 import orderApi from '../../services/order.service';
 import toast from 'react-hot-toast';
 import '../../assets/styles/admin.css';
+import { useSearchParams } from 'react-router-dom';
 
 const OrderManager = () => {
+  const [searchParams, setSearchParams] = useSearchParams(); // <--- 2. HOOK URL
+
+  // --- 3. LẤY GIÁ TRỊ TỪ URL (Thay cho useState mặc định) ---
+  const filterStatus = searchParams.get('status') || 'All';
+  const currentPage = parseInt(searchParams.get('page') || '1');
+  const searchTerm = searchParams.get('search') || '';
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // Filter & Pagination State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Số lượng item mỗi trang
-
-  // Stats State (Thống kê nhanh)
+  // Stats State (Thống kê nhanh) - Giữ nguyên
   const [stats, setStats] = useState({ total: 0, pending: 0, shipping: 0, completed: 0 });
 
-  // Modal State
+  // Modal State - Giữ nguyên (Modal không cần lưu URL cũng được, hoặc lưu tùy ý)
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const itemsPerPage = 5; 
 
   // --- FETCH DATA ---
   const fetchOrders = useCallback(async () => {
       setLoading(true);
       try {
-          // Gọi API (Backend đã có params status nhưng ở đây mình fetch hết về rồi filter client cho nhanh với số lượng ít,
-          // hoặc truyền params nếu muốn server-side filtering chuẩn chỉ)
+          // Logic gọi API giữ nguyên
           const res = await orderApi.getAllOrders({ status: filterStatus === 'All' ? '' : filterStatus });
           if (res.success) {
               setOrders(res.data);
               
-              // Tính toán stats từ dữ liệu mới nhất
+              // Logic tính stats giữ nguyên
               const all = res.data;
               setStats({
                   total: all.length,
@@ -49,13 +52,13 @@ const OrderManager = () => {
       } finally {
           setLoading(false);
       }
-  }, [filterStatus]); // Khi filterStatus thay đổi -> Gọi lại API
+  }, [filterStatus]); // Phụ thuộc vào filterStatus từ URL
 
   useEffect(() => {
       fetchOrders();
   }, [fetchOrders]);
 
-  // --- ACTIONS ---
+  // --- ACTIONS (Giữ nguyên logic xử lý) ---
   const handleView = (order) => {
       setSelectedOrder(order);
       setShowModal(true);
@@ -66,12 +69,9 @@ const OrderManager = () => {
           const res = await orderApi.updateOrderStatus(id, newStatus);
           if (res.success) {
               toast.success("Cập nhật trạng thái thành công!");
-              
-              // Cập nhật local state ngay lập tức để UI mượt
               setOrders(prevOrders => 
                   prevOrders.map(o => o._id === id ? { ...o, status: newStatus } : o)
               );
-              // Cập nhật lại stats
               fetchOrders(); 
           }
       } catch {
@@ -90,6 +90,7 @@ const OrderManager = () => {
   };
 
   // --- CLIENT-SIDE FILTERING (Cho Search) ---
+  // Logic lọc client giữ nguyên
   const filteredOrders = orders.filter(order => {
     const s = searchTerm.toLowerCase();    
     const orderNumber = (order.orderNumber || "").toLowerCase();
@@ -99,7 +100,7 @@ const OrderManager = () => {
     return orderNumber.includes(s) || 
            customerName.includes(s) ||
            phoneNumber.includes(s);
-});
+  });
 
   // --- PAGINATION ---
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
@@ -107,7 +108,20 @@ const OrderManager = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
 
-  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+  // --- 4. CẬP NHẬT HÀM CHANGE ĐỂ SET URL ---
+  const handlePageChange = (pageNumber) => {
+      setSearchParams({ status: filterStatus, search: searchTerm, page: pageNumber });
+  };
+
+  const handleSearchChange = (e) => {
+      // Khi search thay đổi, reset về page 1
+      setSearchParams({ status: filterStatus, search: e.target.value, page: 1 });
+  };
+
+  const handleFilterChange = (e) => {
+      // Khi status thay đổi, reset về page 1, giữ nguyên search
+      setSearchParams({ status: e.target.value, search: searchTerm, page: 1 });
+  };
 
   return (
     <div className="animate-fade-in">
@@ -168,7 +182,7 @@ const OrderManager = () => {
                         placeholder="Tìm mã đơn, tên khách, SĐT..." 
                         className="border-start-0 shadow-none"
                         value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        onChange={handleSearchChange}
                       />
                   </InputGroup>
               </Col>
@@ -176,7 +190,7 @@ const OrderManager = () => {
                   <Form.Select 
                     className="shadow-none" 
                     value={filterStatus}
-                    onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                    onChange={handleFilterChange}
                   >
                       <option value="All">Tất cả trạng thái</option>
                       <option value="pending">Chờ xử lý</option>
