@@ -1,6 +1,9 @@
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
 import Product from "../models/product.js";
+import User from "../models/user.js"; // Import thêm User để lấy email
+import sendEmail from "../utils/sendEmail.js"; // Import hàm gửi mail
+import { orderConfirmationTemplate } from "../utils/emailTemplates.js";
 
 // --- CLIENT: TẠO ĐƠN HÀNG ---
 export const createOrderService = async (userId, orderData) => {
@@ -68,6 +71,23 @@ export const createOrderService = async (userId, orderData) => {
     // 5. Xóa giỏ hàng sau khi đặt thành công
     cart.items = [];
     await cart.save();
+
+    // 6 GỬI EMAIL XÁC NHẬN (NON-BLOCKING)
+    // Logic: Gửi mail là tác vụ phụ, không nên để user phải chờ nó gửi xong mới báo thành công.
+    // Nên không dùng await ở đây, hoặc dùng try-catch riêng để không làm fail đơn hàng.
+    try {
+        const user = await User.findById(userId); // Lấy thông tin user để có email
+        if (user && user.email) {
+            await sendEmail({
+                email: user.email,
+                subject: `Xác nhận đơn hàng #${newOrder.orderNumber} - EcoStore`,
+                html: orderConfirmationTemplate(newOrder, user.name || "Khách hàng"),
+            });
+        }
+    } catch (emailError) {
+        console.error("Lỗi gửi email xác nhận:", emailError.message);
+        // Không throw error để đơn hàng vẫn thành công
+    }
 
     return newOrder;
 };

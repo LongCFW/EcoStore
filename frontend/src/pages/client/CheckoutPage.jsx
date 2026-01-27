@@ -140,7 +140,7 @@ const CheckoutPage = () => {
           const res = await orderApi.createOrder(orderPayload);
           
           if (res.success) {
-              toast.success("Đặt hàng thành công!");
+              toast.success("Đặt hàng thành công! Vui lòng kiểm tra email.");
               clearCart();
               navigate('/checkout/success', { state: { order: res.data } });
           }
