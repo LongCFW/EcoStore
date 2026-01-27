@@ -5,6 +5,7 @@ import authRoutes from "./auth.routes.js";
 import cartRoutes from "./cart.routes.js";
 import orderRoutes from "./order.routes.js";
 import userRoutes from './user.routes.js';
+import contactRoutes from "./contact.routes.js";
 
 const router = express.Router();
 
@@ -14,5 +15,5 @@ router.use("/auth", authRoutes);
 router.use("/cart", cartRoutes);
 router.use("/orders", orderRoutes);
 router.use('/users', userRoutes);
-
+router.use("/contact", contactRoutes);
 export default router;
