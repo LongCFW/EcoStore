@@ -4,38 +4,38 @@ import {
     getProductBySlug,
     getRelatedProducts,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    createProduct
 } from "../controllers/product.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
 import { body } from "express-validator";
-import { createProduct } from "../controllers/product.controller.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
-// GET /api/products
+// --- PUBLIC ROUTES ---
 router.get("/", getAllProducts);
-// GET /api/products/related?categoryId=...&currentProductId=...
 router.get("/related", getRelatedProducts);
-// GET /api/products/:slug
 router.get("/:slug", getProductBySlug);
 
-// PROTECTED (admin only) — READ
+// --- PROTECTED ROUTES (Admin & Manager) ---
+// Yêu cầu: Chỉ Admin và Manager được phép thao tác
+
+// 1. Xem danh sách dạng bảng (cho trang Admin)
 router.get(
     "/admin/all",
     authMiddleware,
-    requireRole(["admin"]),
+    requireRole(["admin", "manager"]), 
     getAllProducts
 );
 
-// Route Tạo sản phẩm (Chỉ Admin)
+// 2. Tạo sản phẩm
 router.post(
-  "/", // Đường dẫn gốc của products
+  "/", 
   authMiddleware,
-  requireRole(["admin"]),
+  requireRole(["admin", "manager"]), 
   [
-    // Validation cơ bản
     body("name").notEmpty().withMessage("Name is required"),
     body("categoryId").notEmpty().withMessage("Category ID is required"),
     body("price_cents").isNumeric().withMessage("Price must be a number"),
@@ -44,20 +44,21 @@ router.post(
   createProduct
 );
 
-// PUT /api/products/:id (Sửa)
+// 3. Sửa sản phẩm
 router.put(
     "/:id",
     authMiddleware,
-    requireRole(["admin"]),
-    validateRequest, // Có thể thêm body validation nếu cần
+    requireRole(["admin", "manager"]),
+    validateRequest,
     updateProduct
 );
 
-// DELETE /api/products/:id (Xóa)
+// 4. Xóa sản phẩm
 router.delete(
     "/:id",
     authMiddleware,
-    requireRole(["admin"]),
+    requireRole(["admin", "manager"]), 
     deleteProduct
 );
+
 export default router;

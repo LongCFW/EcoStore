@@ -1,31 +1,27 @@
 import express from "express";
 import { body } from "express-validator";
-// 1. Import ĐÚNG tên các hàm từ controller
 import { 
     getCategories, 
     createCategory, 
     updateCategory, 
     deleteCategory
 } from "../controllers/category.controller.js";
-
-// 2. Giữ nguyên các middleware cũ của bạn
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
-// --- PUBLIC ROUTES (Ai cũng xem được) ---
-// Route này giúp Frontend hiển thị filter danh mục
+// --- PUBLIC ROUTES ---
 router.get("/", getCategories); 
 
-// --- PROTECTED ROUTES (Chỉ Admin) ---
+// --- PROTECTED ROUTES (Admin & Manager) ---
 
-// 1. Tạo mới (Create) - Giữ nguyên logic validate của bạn
+// 1. Tạo mới
 router.post(
     "/",
-    authMiddleware,             
-    requireRole(["admin"]),     
+    authMiddleware,            
+    requireRole(["admin", "manager"]), // Cho phép cả Manager
     [
         body("name").notEmpty().withMessage("Tên danh mục là bắt buộc")
     ],
@@ -33,28 +29,28 @@ router.post(
     createCategory              
 );
 
-// 2. Cập nhật (Update) - THÊM MỚI để trang quản lý hoạt động
+// 2. Cập nhật
 router.put(
     "/:id",
     authMiddleware,
-    requireRole(["admin"]),
+    requireRole(["admin", "manager"]),
     updateCategory
 );
 
-// 3. Xóa (Delete) - THÊM MỚI để trang quản lý hoạt động
+// 3. Xóa
 router.delete(
     "/:id",
     authMiddleware,
-    requireRole(["admin"]),
+    requireRole(["admin", "manager"]),
     deleteCategory
 );
 
-// (Route test cũ: Đã sửa lại dùng getCategories để không bị lỗi ReferenceError)
+// Route lấy danh sách cho trang admin (thực ra dùng chung getCategories cũng được)
 router.get(
   "/admin",
   authMiddleware,
-  requireRole(["admin"]),
-  getCategories // <--- Sửa getAllCategories thành getCategories
+  requireRole(["admin", "manager"]),
+  getCategories
 );
 
 export default router;

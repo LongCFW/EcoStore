@@ -6,16 +6,17 @@ import {
     getAllOrders, 
     updateOrderStatus 
 } from "../controllers/order.controller.js";
-// Dùng verifyToken và isAdmin từ file middleware chuẩn của bạn
-import { verifyToken, isAdmin } from "../middlewares/auth.middleware.js"; 
+import { verifyToken } from "../middlewares/auth.middleware.js"; 
+// Import middleware phân quyền
+import { requireRole } from "../middlewares/role.middleware.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
-// Tất cả route đều cần đăng nhập
+// Tất cả route đều cần đăng nhập (xác thực user trước)
 router.use(verifyToken);
 
-// --- CLIENT ROUTES ---
+// --- CLIENT ROUTES (Khách hàng) ---
 router.post(
     "/",
     [
@@ -26,13 +27,21 @@ router.post(
     createOrder
 );
 
-router.get("/my-orders", getMyOrders); // Đổi path thành /my-orders cho rõ ràng
+router.get("/my-orders", getMyOrders);
 
-// --- ADMIN ROUTES ---
-// Admin xem tất cả đơn hàng
-router.get("/admin/all", isAdmin, getAllOrders);
+// --- ADMIN / MANAGER / STAFF ROUTES ---
+// Yêu cầu: Admin, Manager, Staff đều xem và cập nhật được
 
-// Admin cập nhật trạng thái đơn hàng (VD: /api/orders/admin/:id/status)
-router.put("/admin/:id/status", isAdmin, updateOrderStatus);
+router.get(
+    "/admin/all", 
+    requireRole(['admin', 'manager', 'staff']), 
+    getAllOrders
+);
+
+router.put(
+    "/admin/:id/status", 
+    requireRole(['admin', 'manager', 'staff']), 
+    updateOrderStatus
+);
 
 export default router;

@@ -32,7 +32,7 @@ const LoginPage = () => {
               login(user, token, rememberMe);
 
               // Chuyển hướng
-              if (user.role === 'admin' || user.role === 'manager') {
+              if (user.role === 'admin' || user.role === 'manager' || user.role === 'staff') {
                   navigate('/admin');
               } else {
                   navigate('/');

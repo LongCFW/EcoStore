@@ -1,67 +1,73 @@
 import jwt from "jsonwebtoken";
+import User from "../models/user.js"; 
 
-export const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({
-            success: false,
-            message: "Unauthorized"
-        });
-    }
-
-    const token = authHeader.split(" ")[1];
-
+/**
+ * LOGIC CỐT LÕI (CORE LOGIC)
+ * 1. Lấy token (Cookie hoặc Header)
+ * 2. Verify Token
+ * 3. Lấy User từ DB + Populate Role (Để phân quyền hoạt động)
+ * 4. Gán userId vào req.user để Controller cũ không bị lỗi
+ */
+const coreAuthLogic = async (req, res, next) => {
     try {
+        let token;
+
+        // 1. Ưu tiên lấy Token từ Cookie (An toàn & Tự động cho trình duyệt)
+        if (req.cookies && req.cookies.token) {
+            token = req.cookies.token;
+        } 
+        // 2. Nếu không có Cookie, kiểm tra Header Authorization (Cho Postman/Mobile)
+        else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+            token = req.headers.authorization.split(" ")[1];
+        }
+
+        // Nếu không tìm thấy token
+        if (!token) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "Không tìm thấy token xác thực. Vui lòng đăng nhập." 
+            });
+        }
+
+        // 3. Giải mã Token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: "Invalid token"
-        });
-    }
-};
 
-export const verifyToken = (req, res, next) => {
-  console.log("--- [DEBUG AUTH] ---");
-  console.log("1. Cookies nhận được:", req.cookies?.token ? "Có Token" : "Không có Token");
-  console.log("2. Header Auth:", req.header("Authorization"));
-  // 1. Lấy token từ header (Dạng: Bearer <token>)
-  const authHeader = req.header("Authorization");
-  const token = authHeader && authHeader.split(" ")[1];
+        // 4. Lấy ID an toàn (Xử lý cả trường hợp token lưu 'userId' hoặc 'id')
+        const tokenUserId = decoded.userId || decoded.id;
+        
+        // 5. Tìm User và Populate Role
+        const user = await User.findById(tokenUserId).populate("role");
 
-  if (!token) {
-    console.log("❌ Lỗi: Không tìm thấy Token ở đâu cả");
-    return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
-  }
+        if (!user) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "User không tồn tại hoặc đã bị xóa." 
+            });
+        }
 
-  try {
-    // 2. Xác thực token
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // 3. Lưu thông tin user đã giải mã vào req để các route sau dùng
-    req.user = verified; 
-    console.log("✅ Xác thực thành công cho User ID:", verified.userId || verified.id);
+        // 6. Gán user vào request (Object Mongoose)
+        req.user = user;
 
-    next(); // Cho phép đi tiếp
-  } catch (err) {
-    console.log("❌ Lỗi verify JWT:", err.message);
-    res.status(401).json({ success: false, message: "Invalid Token" });
-  }
-};
+        // --- DÒNG QUAN TRỌNG ĐỂ FIX LỖI CART & AUTH ---
+        // Gán thêm thuộc tính .userId trỏ về ._id để các Controller cũ (Cart, Auth) 
+        // gọi req.user.userId vẫn chạy đúng mà không cần sửa code Controller.
+        req.user.userId = user._id; 
+        // ----------------------------------------------
 
-// Middleware kiểm tra quyền Admin
-export const isAdmin = (req, res, next) => {
-    // req.user đã được tạo ra từ verifyToken ở trên
-    // Kiểm tra xem role có phải là 'admin' không
-    if (req.user && req.user.role === 'admin') {
         next(); // Cho phép đi tiếp
-    } else {
-        return res.status(403).json({ 
+    } catch (error) {
+        console.error("❌ Auth Error:", error.message);
+        return res.status(401).json({ 
             success: false, 
-            message: "Access denied. Admin resources only." 
+            message: "Phiên đăng nhập hết hạn hoặc token không hợp lệ." 
         });
     }
 };
+
+// --- XUẤT RA 2 TÊN ĐỂ TƯƠNG THÍCH VỚI MỌI FILE ---
+
+// 1. Dành cho các file: auth.routes, order.routes, user.routes
+export const verifyToken = coreAuthLogic;
+
+// 2. Dành cho các file: cart.routes, product.routes, category.routes
+export const authMiddleware = coreAuthLogic;

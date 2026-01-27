@@ -11,21 +11,33 @@ import {
     getWishlist,
     toggleWishlist 
 } from '../controllers/user.controller.js';
-// Middleware kiểm tra login và quyền Admin
-import { verifyToken, isAdmin } from '../middlewares/auth.middleware.js'; 
+import { verifyToken } from '../middlewares/auth.middleware.js'; 
+// Import thêm requireRole
+import { requireRole } from '../middlewares/role.middleware.js';
 
 const router = express.Router();
 
+// Middleware xác thực áp dụng cho toàn bộ router này
 router.use(verifyToken); 
+
+// --- CLIENT ROUTES (Cá nhân người dùng tự thao tác) ---
 router.get('/wishlist', getWishlist);
 router.post('/wishlist/toggle', toggleWishlist);
-router.get('/', getAllUsers);
-router.put('/:id/status', toggleUserStatus);
-router.delete('/:id', deleteUser);
+
 router.post('/address', addAddress);
 router.put('/address/:addressId', updateAddress);
 router.delete('/address/:addressId', deleteAddress);
 router.put('/address/:addressId/default', setDefaultAddress);
-router.get('/:id', getUserById);
+
+
+// --- MANAGEMENT ROUTES (Phân quyền) ---
+
+// 1. Xem danh sách & Xem chi tiết: Admin & Manager đều được xem
+router.get('/', requireRole(['admin', 'manager']), getAllUsers);
+router.get('/:id', requireRole(['admin', 'manager']), getUserById);
+
+// 2. Thao tác nhạy cảm (Khóa/Xóa): CHỈ ADMIN được làm
+router.put('/:id/status', requireRole(['admin']), toggleUserStatus);
+router.delete('/:id', requireRole(['admin']), deleteUser);
 
 export default router;
