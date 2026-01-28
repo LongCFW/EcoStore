@@ -5,14 +5,19 @@ import bcrypt from "bcrypt";
 export const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
+        const result = await loginService(email, password);                
+        // Cấu hình cookie để chạy được trên Render (Cross-site)
+        const isProduction = process.env.NODE_ENV === 'production';
 
-        const result = await loginService(email, password);
         res.cookie("token", result.token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: "strict",
-            maxAge: 24 * 60 * 60 * 1000 // 1 ngày
+            httpOnly: true, // Chống XSS (JS không đọc được)
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày            
+            // QUAN TRỌNG: Cấu hình cho Render
+            secure: isProduction ? true : false, // Bắt buộc true nếu là https (Render)
+            sameSite: isProduction ? 'none' : 'lax', // 'none' để cookie đi qua 2 domain khác nhau
         });
+        // ---------------------------
+
         res.status(200).json({
             success: true,
             data: result,

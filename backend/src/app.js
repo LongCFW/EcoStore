@@ -16,6 +16,8 @@ import cartRoutes from "./routes/cart.routes.js";
 // 1. CONFIGURATION
 dotenv.config();
 const app = express();
+// Tin tưởng proxy đầu tiên (Render/Nginx) để lấy đúng IP và HTTPS
+app.set('trust proxy', 1);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
