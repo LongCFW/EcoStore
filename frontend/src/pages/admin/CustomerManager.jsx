@@ -83,18 +83,31 @@ const CustomerManager = () => {
   };
 
   const handleToggleStatus = async (id, currentStatus) => {
+    
     const action = currentStatus === 1 ? 'KHÓA' : 'MỞ KHÓA';
+    const nextStatus = currentStatus === 1 ? 0 : 1; 
+
     if(window.confirm(`Xác nhận ${action} tài khoản này?`)) {
         try {
             const res = await axiosClient.put(`/users/${id}/status`);
-            if (res.success) {
-                setUsers(users.map(u => u._id === id ? { ...u, status: res.newStatus } : u));
+                    
+            if (res.success) {                            
+                setUsers(prevUsers => prevUsers.map(u => 
+                    u._id === id ? { ...u, status: nextStatus } : u
+                ));
+                // Cập nhật luôn cho Modal nếu đang mở user đó
                 if (selectedUser && selectedUser._id === id) {
-                    setSelectedUser(prev => ({ ...prev, status: res.newStatus }));
-                }
+                    setSelectedUser(prev => ({ ...prev, status: nextStatus }));
+                }                
+                alert("Thành công!"); 
             }
-        } catch {
-            alert("Lỗi cập nhật trạng thái");
+        } catch (error) {            
+            console.error("Lỗi toggle status:", error);            
+            if (error.response && error.response.status === 403) {
+                alert("BẠN KHÔNG CÓ QUYỀN THỰC HIỆN THAO TÁC NÀY (Chỉ Admin).");
+            } else {
+                alert("Lỗi cập nhật trạng thái. Vui lòng thử lại sau.");
+            }
         }
     }
   };
