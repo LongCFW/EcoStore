@@ -6,18 +6,23 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (options) => {
   try {
-    const data = await resend.emails.send({
-      from: 'EcoStore <onboarding@resend.dev>', // Mail mặc định của Resend (hoặc domain riêng nếu có)
+    // Cập nhật cách lấy kết quả từ Resend
+    const { data, error } = await resend.emails.send({
+      from: 'EcoStore <onboarding@resend.dev>',
       to: options.email,
       subject: options.subject,
       html: options.html,
     });
+
+    if (error) {
+      console.error("❌ Resend API trả về lỗi:", error);
+      return null;
+    }
     
-    console.log("Email sent API Success:", data.id);
+    console.log("✅ Email sent API Success. ID:", data.id);
     return data;
-  } catch (error) {
-    console.error("Email API Error:", error);
-    // Không throw error để tránh crash app nếu gửi mail lỗi
+  } catch (err) {
+    console.error("❌ Lỗi hệ thống gửi mail:", err);
   }
 };
 
