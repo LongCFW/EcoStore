@@ -25,7 +25,7 @@ connectDB();
 // 3. GLOBAL MIDDLEWARES (Bộ lọc chung)
 // Phải đặt trước Routes để xử lý dữ liệu đầu vào
 app.use(cors({
-    origin: "http://localhost:5173", // URL chính xác của Frontend
+    origin: process.env.CLIENT_URL || "http://localhost:5173", // URL chính xác của Frontend
     credentials: true // QUAN TRỌNG: Cho phép gửi/nhận cookie
 }));
 app.use(express.json()); // quan trọng: giúp server hiểu JSON từ client
