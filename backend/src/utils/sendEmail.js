@@ -13,6 +13,8 @@ const sendEmail = async (options) => {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS,
     },
+    // Thêm timeout để không bị treo quá lâu nếu mạng lag
+    connectionTimeout: 10000,
   });
 
   // 2. Định nghĩa nội dung email
