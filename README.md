@@ -1,7 +1,6 @@
 # EcoStore - Nền Tảng Thương Mại Điện Tử MERN Stack
 
 Dự án E-commerce chuyên kinh doanh các sản phẩm xanh, hữu cơ và thân thiện với môi trường. Hệ thống bao gồm giao diện mua sắm cho khách hàng và trang quản trị (Admin Dashboard) với phân quyền chặt chẽ.
-![EcoStore Banner](https://via.placeholder.com/1200x400?text=EcoStore+Project+Banner)
 
 ## Giới Thiệu
 
