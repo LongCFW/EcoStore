@@ -75,20 +75,21 @@ export const createOrderService = async (userId, orderData) => {
     // 6 GỬI EMAIL XÁC NHẬN (NON-BLOCKING)
     // Logic: Gửi mail là tác vụ phụ, không nên để user phải chờ nó gửi xong mới báo thành công.
     // Nên không dùng await ở đây, hoặc dùng try-catch riêng để không làm fail đơn hàng.
-    try {
-        const user = await User.findById(userId); // Lấy thông tin user để có email
-        if (user && user.email) {
-            await sendEmail({
-                email: user.email,
-                subject: `Xác nhận đơn hàng #${newOrder.orderNumber} - EcoStore`,
-                html: orderConfirmationTemplate(newOrder, user.name || "Khách hàng"),
-            });
-        }
-    } catch (emailError) {
-        console.error("Lỗi gửi email xác nhận:", emailError.message);
-        // Không throw error để đơn hàng vẫn thành công
+    // Lấy thông tin user
+    const user = await User.findById(userId);
+    if (user && user.email) {
+        // Promise độc lập
+        sendEmail({
+            email: user.email,
+            subject: `Xác nhận đơn hàng #${newOrder.orderNumber} - EcoStore`,
+            html: orderConfirmationTemplate(newOrder, user.name || "Khách hàng"),
+        }).catch(err => {
+            // Nếu gửi lỗi thì chỉ log ra server để admin biết, không làm phiền người dùng
+            console.error("⚠️ Lỗi gửi mail ngầm (Không ảnh hưởng đơn hàng):", err.message);
+        });
     }
 
+    // Trả về kết quả NGAY LẬP TỨC, không cần đợi mail
     return newOrder;
 };
 
