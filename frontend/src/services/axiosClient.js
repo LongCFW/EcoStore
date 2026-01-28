@@ -1,35 +1,31 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api', 
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true // trình duyệt tự gửi cookieHttpOnly
+  withCredentials: true // Quan trọng: Để gửi/nhận Cookie HttpOnly
 });
 
-// INTERCEPTOR REQUEST: Gắn Token từ Cookie vào Header
-// axiosClient.interceptors.request.use(async (config) => {
-//   const token = Cookies.get('token'); // <--- Lấy từ Cookie
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// }, (error) => {
-//   return Promise.reject(error);
-// });
+axiosClient.interceptors.request.use(async (config) => {
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
-// INTERCEPTOR RESPONSE
+// Interceptor Response (Xử lý kết quả trả về và lỗi)
 axiosClient.interceptors.response.use(
   (response) => {
+    // Trả về data gọn gàng
     return response.data;
   },
   (error) => {
-    // Nếu lỗi 401 (Unauthorized) -> Có thể do Token hết hạn
+    // Xử lý lỗi chung
     if (error.response && error.response.status === 401) {
-      // Có thể xử lý logout tự động ở đây nếu muốn
-      console.error("Token hết hạn hoặc không hợp lệ.");
+      console.error("Token hết hạn hoặc không hợp lệ. (Auto Logout logic here)");
+      // Ví dụ: window.location.href = '/login'; 
     }
     return Promise.reject(error);
   }
