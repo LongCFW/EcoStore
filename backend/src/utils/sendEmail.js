@@ -1,33 +1,24 @@
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-
+import { Resend } from 'resend';
+import dotenv from 'dotenv';
 dotenv.config();
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const sendEmail = async (options) => {
-  // 1. Tạo Transporter (Người vận chuyển)
-  const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: process.env.MAIL_PORT,
-    secure: process.env.MAIL_SECURE === "true", 
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
-    },
-    // Thêm timeout để không bị treo quá lâu nếu mạng lag
-    connectionTimeout: 10000,
-  });
-
-  // 2. Định nghĩa nội dung email
-  const message = {
-    from: `"EcoStore 🌿" <${process.env.MAIL_USER}>`, // Tên người gửi hiển thị
-    to: options.email,
-    subject: options.subject,
-    html: options.html, // Nội dung HTML
-  };
-
-  // 3. Gửi email
-  const info = await transporter.sendMail(message);
-  console.log("Email sent: %s", info.messageId);
+  try {
+    const data = await resend.emails.send({
+      from: 'EcoStore <onboarding@resend.dev>', // Mail mặc định của Resend (hoặc domain riêng nếu có)
+      to: options.email,
+      subject: options.subject,
+      html: options.html,
+    });
+    
+    console.log("Email sent API Success:", data.id);
+    return data;
+  } catch (error) {
+    console.error("Email API Error:", error);
+    // Không throw error để tránh crash app nếu gửi mail lỗi
+  }
 };
 
 export default sendEmail;
