@@ -91,53 +91,82 @@ Dự án E-commerce chuyên kinh doanh các sản phẩm xanh, hữu cơ và th�
 ## Cấu Trúc Dự Án
 
 EcoStore/
-├── backend/                # API Server (NodeJS/Express)
-│   ├── src/
-│   │   ├── config/         # DB connection, Seeding
-│   │   ├── controllers/    # Xử lý Logic request/response
-│   │   ├── middlewares/    # Auth, Role, Error, Validate
-│   │   ├── models/         # MongoDB Schemas (User, Product, Order...)
-│   │   ├── routes/         # Định nghĩa API endpoints
-│   │   ├── seeds/          # Test data
-│   │   ├── services/       # Logic nghiệp vụ phức tạp (Business Logic)
-│   │   ├── utils/          # SendEmail, Templates
-│   │   └── app.js          # Entry point
-│   └── .env                # Biến môi trường
-│   └── node_module
-│   └── scripts
-│   └── uploads
-│   └── .gitignore
-│   └── package-lock.son
-│   └── package.json
-└── frontend/               # Client & Admin (React/Vite)
-    ├── src/
-    │   ├── assets/         # CSS, Images
-    │   │   ├── images/
-    │   │   └── styles/
-    │   ├── components/
-    │   │   ├── admin/
-    │   │   ├── cart/
-    │   │   ├── common/
-    │   │   ├── product/
-    │   │   └── profile/
-    │   ├── context/        # Global State (Auth, Cart, Wishlist, AdminTheme)
-    │   ├── hooks/          # Custom Hooks (useAuth, useCart...)
-    │   ├── layouts/        # AdminLayout, MainLayout
-    │   ├── pages/          # Các trang (Client & Admin)
-    │   │   ├── admin/
-    │   │   ├── auth/
-    │   │   └── client/
-    │   ├── routes/         # AppRoutes, ProtectedRoute
-    │   ├── services/       # API Calls (axiosClient)
-    │   ├── App.jsx
-    │   └── main.jsx
-    │── .env
-    │── .gitignore
-    │── eslint.config.js
-    │── index.html
-    │── package.-lock.json
-    │── package.json
-    └── vite.config.js
+├── backend/                            # Thư mục chứa toàn bộ mã nguồn phía Server (API, Database)
+│   ├── src/                            # Source code chính của Backend
+│   │   ├── config/                     # Cấu hình hệ thống
+│   │   │   └── db.js                   # File kết nối tới MongoDB
+│   │   ├── controllers/                # (Controller) Tiếp nhận Request, gọi Service và trả về Response cho Client
+│   │   │   ├── auth.controller.js      # Xử lý đăng nhập, đăng ký
+│   │   │   ├── product.controller.js   # Xử lý CRUD sản phẩm
+│   │   │   └── ...                     # Các controller khác (Order, User...)
+│   │   ├── middlewares/                # Các hàm trung gian chạy trước khi vào Controller
+│   │   │   ├── auth.middleware.js      # Xác thực user (kiểm tra Token/Cookie)
+│   │   │   ├── role.middleware.js      # Phân quyền (Admin, Manager, Customer)
+│   │   │   ├── error.middleware.js     # Bắt lỗi tập trung (Centralized Error Handling)
+│   │   │   └── validate.middleware.js  # Kiểm tra dữ liệu đầu vào (Express Validator)
+│   │   ├── models/                     # (Model) Định nghĩa Schema dữ liệu cho MongoDB (Mongoose)
+│   │   │   ├── user.model.js           # Cấu trúc bảng User
+│   │   │   ├── product.model.js        # Cấu trúc bảng Product
+│   │   │   └── ...                     # Các model khác
+│   │   ├── routes/                     # Định nghĩa các đường dẫn API (Endpoints)
+│   │   │   ├── auth.routes.js          # Định tuyến cho Auth (/api/auth)
+│   │   │   ├── product.routes.js       # Định tuyến cho Product (/api/products)
+│   │   │   └── ...                     # Các routes khác
+│   │   ├── seeds/                      # Chứa dữ liệu mẫu (Seed data) để khởi tạo DB ban đầu
+│   │   ├── services/                   # (Service) Chứa Logic nghiệp vụ phức tạp (tách biệt khỏi Controller)
+│   │   │   ├── auth.service.js         # Logic mã hóa pass, tạo token...
+│   │   │   └── ...                     # Các service khác
+│   │   ├── utils/                      # Các hàm tiện ích dùng chung
+│   │   │   ├── sendEmail.js            # Cấu hình Nodemailer để gửi mail
+│   │   │   └── emailTemplates.js       # Chứa HTML mẫu cho email
+│   │   └── app.js                      # File khởi chạy chính của Server (Entry point)
+│   ├── .env                            # Chứa biến môi trường bảo mật (DB URL, JWT Secret, Mail Pass...)
+│   ├── node_modules/                   # Thư viện tải về từ npm (không sửa file trong này)
+│   ├── scripts/                        # Các script chạy lệnh phụ (ví dụ: script backup DB)
+│   ├── uploads/                        # Thư mục chứa ảnh/file do người dùng upload lên
+│   ├── .gitignore                      # Liệt kê các file không đưa lên Git (ví dụ: node_modules, .env)
+│   ├── package-lock.json               # Ghi lại phiên bản chính xác của các thư viện đã cài
+│   └── package.json                    # Khai báo thông tin dự án và danh sách dependencies
+│
+└── frontend/                           # Thư mục chứa mã nguồn phía Client & Admin (ReactJS)
+    ├── src/                            # Source code chính của Frontend
+    │   ├── assets/                     # Tài nguyên tĩnh
+    │   │   ├── images/                 # Logo, banner, ảnh tĩnh
+    │   │   └── styles/                 # File CSS toàn cục (Global styles)
+    │   ├── components/                 # Các thành phần giao diện nhỏ (Reusable Components)
+    │   │   ├── admin/                  # Components riêng cho trang Admin (Sidebar, Charts...)
+    │   │   ├── cart/                   # Components giỏ hàng (CartItem, MiniCart...)
+    │   │   ├── common/                 # Components dùng chung (Header, Footer, Button...)
+    │   │   ├── product/                # Components sản phẩm (ProductCard, Filter...)
+    │   │   └── profile/                # Components trang cá nhân (AddressList, OrderHistory...)
+    │   ├── context/                    # Quản lý trạng thái toàn cục (Global State)
+    │   │   ├── AuthProvider.jsx        # Lưu thông tin User đăng nhập
+    │   │   ├── CartProvider.jsx        # Lưu trạng thái Giỏ hàng
+    │   │   └── ...                     # Các context khác (Wishlist, Theme...)
+    │   ├── hooks/                      # Custom Hooks (Logic tái sử dụng)
+    │   │   ├── useAuth.js              # Hook lấy info user nhanh
+    │   │   └── useCart.js              # Hook thao tác giỏ hàng nhanh
+    │   ├── layouts/                    # Các bộ khung giao diện chính
+    │   │   ├── AdminLayout.jsx         # Layout có Sidebar quản trị
+    │   │   └── MainLayout.jsx          # Layout có Header/Footer cho khách mua hàng
+    │   ├── pages/                      # Các trang màn hình hoàn chỉnh (Views)
+    │   │   ├── admin/                  # Các trang quản trị (Dashboard, ProductManager...)
+    │   │   ├── auth/                   # Các trang xác thực (Login, Register...)
+    │   │   └── client/                 # Các trang mua sắm (Home, ProductList, Cart...)
+    │   ├── routes/                     # Cấu hình điều hướng
+    │   │   ├── AppRoutes.jsx           # Định nghĩa luồng đi của các trang
+    │   │   └── ProtectedRoute.jsx      # Component bảo vệ các trang cần đăng nhập/phân quyền
+    │   ├── services/                   # Nơi gọi API xuống Backend (Axios)
+    │   │   └── axiosClient.js          # Cấu hình Axios (BaseURL, Interceptors)
+    │   ├── App.jsx                     # Component gốc chứa các Provider và Router
+    │   └── main.jsx                    # Điểm khởi đầu render React vào DOM (index.html)
+    ├── .env                            # Biến môi trường Frontend (API URL...)
+    ├── .gitignore                      # File loại bỏ khỏi Git
+    ├── eslint.config.js                # Cấu hình kiểm tra lỗi cú pháp code (Linting)
+    ├── index.html                      # File HTML gốc duy nhất của ứng dụng SPA
+    ├── package-lock.json               # Phiên bản chính xác của thư viện Frontend
+    ├── package.json                    # Khai báo dependencies Frontend (React, Bootstrap...)
+    └── vite.config.js                  # Cấu hình công cụ build Vite (Port, Alias...)
 
 ## Hướng Dẫn Cài Đặt & Chạy Local
 
