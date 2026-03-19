@@ -10,10 +10,26 @@ export const createOrderService = async (userId, orderData) => {
     const cart = await Cart.findOne({ userId });
     if (!cart || cart.items.length === 0) throw new Error("Giỏ hàng trống");
 
+    // NHẬN DANH SÁCH ID TỪ FRONTEND
+    const { selectedItemIds, shippingAddress, phoneNumber, note, paymentMethod } = orderData;
+    
+    if (!selectedItemIds || selectedItemIds.length === 0) {
+        throw new Error("Không có sản phẩm nào được chọn để thanh toán");
+    }
+
     let totalAmount_cents = 0;
     const orderItems = [];
 
-    for (const item of cart.items) {
+    // CHỈ XỬ LÝ NHỮNG ITEM ĐƯỢC CHỌN
+    const itemsToCheckout = cart.items.filter(item => 
+        selectedItemIds.includes(item.productId.toString())
+    );
+
+    if (itemsToCheckout.length === 0) {
+        throw new Error("Sản phẩm đã chọn không còn trong giỏ hàng");
+    }
+
+    for (const item of itemsToCheckout) {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Sản phẩm không tồn tại: ${item.productId}`);
 
@@ -49,19 +65,21 @@ export const createOrderService = async (userId, orderData) => {
         orderNumber: `ORD-${Date.now()}`,
         items: orderItems,
         totalAmount_cents: finalTotal,
-        shippingAddress: orderData.shippingAddress,
-        phoneNumber: orderData.phoneNumber,
-        note: orderData.note,
-        paymentMethod: orderData.paymentMethod || "COD",
+        shippingAddress: shippingAddress,
+        phoneNumber: phoneNumber,
+        note: note,
+        paymentMethod: paymentMethod || "COD",
         status: "pending"
     });
 
-    cart.items = [];
+    // --- XÓA CÁC ITEM ĐÃ MUA KHỎI GIỎ HÀNG ---
+    // Dùng filter để giữ lại những item KHÔNG CÓ trong danh sách đã mua
+    cart.items = cart.items.filter(item => !selectedItemIds.includes(item.productId.toString()));
     await cart.save();
 
     const user = await User.findById(userId);
 
-    // --- GHI LOG: THANH TOÁN (ĐẶT HÀNG) ---
+    // --- GHI LOG ---
     if (user) {
         user.activityLogs.push({
             action: "ĐẶT HÀNG THÀNH CÔNG",
@@ -70,14 +88,14 @@ export const createOrderService = async (userId, orderData) => {
         await user.save();
     }
 
-    // 6 GỬI EMAIL XÁC NHẬN (NON-BLOCKING)
+    // --- GỬI EMAIL ---
     if (user && user.email) {
         sendEmail({
             email: user.email,
             subject: `Xác nhận đơn hàng #${newOrder.orderNumber} - EcoStore`,
             html: orderConfirmationTemplate(newOrder, user.name || "Khách hàng"),
         }).catch(err => {
-            console.error("⚠️ Lỗi gửi mail ngầm (Không ảnh hưởng đơn hàng):", err.message);
+            console.error("⚠️ Lỗi gửi mail ngầm:", err.message);
         });
     }
 

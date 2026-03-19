@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, FloatingLabel, Badge } from 'react-bootstrap';
-import { FaCreditCard, FaMoneyBillWave, FaUniversity, FaArrowLeft, FaMapMarkerAlt, FaUser, FaPhoneAlt, FaEnvelope, FaPlusCircle, FaAddressBook, FaStickyNote } from 'react-icons/fa';
-import { Link, useNavigate } from 'react-router-dom';
+import { FaCreditCard, FaMoneyBillWave, FaUniversity, FaArrowLeft, FaMapMarkerAlt, FaUser, FaPhoneAlt, FaEnvelope, FaPlusCircle, FaAddressBook, FaStickyNote, FaCheckCircle, FaTicketAlt } from 'react-icons/fa';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import orderApi from '../../services/order.service';
@@ -9,68 +9,62 @@ import userApi from '../../services/user.service';
 import toast from 'react-hot-toast';
 import '../../assets/styles/cart-checkout.css';
 
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { cartItems, clearCart } = useCart();
-  const { user, login } = useAuth(); // login dùng để refresh context
+  const location = useLocation();
+  const { cartItems, refreshCart } = useCart();
+  const { user, login } = useAuth(); 
+
+  // FIX WARNING 1: Bọc selectedItemIds trong useMemo
+  const selectedItemIds = useMemo(() => {
+      return location.state?.selectedItems || [];
+  }, [location.state?.selectedItems]);
 
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState('');
+//   const [couponCode, setCouponCode] = useState('');
   
-
+  // FIX WARNING 2: Thêm login vào mảng phụ thuộc
   useEffect(() => {
       const fetchLatestAddresses = async () => {
           try {
               const res = await userApi.getProfile();
-              if (res.success) {
-                  login(res.data); // Cập nhật user mới nhất vào context
-              }
+              if (res.success) login(res.data); 
           } catch (error) {
               console.error("Lỗi cập nhật địa chỉ:", error);
           }
       };
       fetchLatestAddresses();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [login]);
 
-
-  // --- LOGIC ĐỊA CHỈ ---
-  // FIX: Dùng useMemo để tránh việc mảng [] được tạo mới mỗi lần render, gây lỗi dependencies cho useEffect
   const savedAddresses = useMemo(() => user?.addresses || [], [user]);
-  
-  // State: Có dùng địa chỉ mới hay không? 
   const [useNewAddress, setUseNewAddress] = useState(savedAddresses.length === 0);
   
-  // State: ID địa chỉ được chọn từ danh sách
-  // (Mặc định chọn cái isDefault, hoặc cái đầu tiên)
   const defaultAddr = useMemo(() => savedAddresses.find(a => a.isDefault) || savedAddresses[0], [savedAddresses]);
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddr ? defaultAddr._id : null); 
 
-  // State: Form nhập địa chỉ mới
   const [newAddrData, setNewAddrData] = useState({
       fullName: user?.name || "",
       phone: user?.phone || "",
-      addressLine: "",
-      city: "",
-      province: ""
+      addressLine: "", city: "", province: ""
   });
 
-  // Effect: Tự động cập nhật state khi user load trang hoặc savedAddresses thay đổi
   useEffect(() => {
       if (savedAddresses.length === 0) {
           setUseNewAddress(true);
       } else if (!selectedAddressId) {
-          // Nếu có địa chỉ mà chưa chọn cái nào -> chọn cái default
           const def = savedAddresses.find(a => a.isDefault) || savedAddresses[0];
           if (def) setSelectedAddressId(def._id);
           setUseNewAddress(false);
       }
   }, [savedAddresses, selectedAddressId]);
 
+  const validCartItems = useMemo(() => {
+      return cartItems.filter(item => item.productId && selectedItemIds.includes(item.productId._id));
+  }, [cartItems, selectedItemIds]);
 
-  // --- TÍNH TOÁN TIỀN ---
-  const validCartItems = useMemo(() => cartItems.filter(item => item.productId), [cartItems]);
   const subtotal = useMemo(() => {
       return validCartItems.reduce((acc, item) => acc + (item.productId.price_cents * item.quantity), 0);
   }, [validCartItems]);
@@ -81,44 +75,42 @@ const CheckoutPage = () => {
   const shippingFee = (subtotal > 0 && !isFreeShip) ? SHIPPING_FEE : 0;
   const total = subtotal + shippingFee;
 
-  // --- XỬ LÝ ĐẶT HÀNG ---
-  const handlePlaceOrder = async () => {
-      if (validCartItems.length === 0) {
-          toast.error("Giỏ hàng trống!");
-          return;
+  useEffect(() => {
+      if (selectedItemIds.length === 0) {
+          toast.error("Bạn chưa chọn sản phẩm nào để thanh toán!");
+          navigate('/cart');
       }
+  }, [selectedItemIds, navigate]);
+
+  const handlePlaceOrder = async () => {
+      if (validCartItems.length === 0) return;
 
       let finalShippingAddress = "";
       let finalPhone = "";
       
       setLoading(true);
       try {
+          // [GIỮ NGUYÊN LOGIC LẤY ĐỊA CHỈ CỦA BẠN TỪ DÒNG 88 ĐẾN 116]
           if (useNewAddress) {
-              // CASE 1: Nhập địa chỉ mới
               if (!newAddrData.fullName || !newAddrData.phone || !newAddrData.addressLine || !newAddrData.city || !newAddrData.province) {
                   toast.error("Vui lòng điền đầy đủ thông tin giao hàng!");
                   setLoading(false);
                   return;
               }
 
-              // -> LƯU VÀO SỔ ĐỊA CHỈ TRƯỚC
               const saveAddrRes = await userApi.addAddress({
                   ...newAddrData,
                   isDefault: savedAddresses.length === 0 
               });
 
               if (saveAddrRes.success) {
-                  // Refresh lại user context để đồng bộ
                   const profileRes = await userApi.getProfile();
                   if (profileRes.success) login(profileRes.data);
               }
 
-              // Format chuỗi địa chỉ để lưu vào đơn hàng
               finalShippingAddress = `${newAddrData.addressLine}, ${newAddrData.city}, ${newAddrData.province}`;
               finalPhone = newAddrData.phone;
-
           } else {
-              // CASE 2: Chọn từ sổ địa chỉ
               const selectedAddr = savedAddresses.find(a => a._id === selectedAddressId);
               if (!selectedAddr) {
                   toast.error("Vui lòng chọn địa chỉ giao hàng");
@@ -129,25 +121,34 @@ const CheckoutPage = () => {
               finalPhone = selectedAddr.phone;
           }
 
-          // -> TẠO ĐƠN HÀNG
+          // Lấy ID và chuyển sang String sạch sẽ
+          const cleanItemIds = selectedItemIds.map(id => id.toString());
+
           const orderPayload = {
               shippingAddress: finalShippingAddress,
               phoneNumber: finalPhone,
               note: note,
-              paymentMethod: paymentMethod
+              paymentMethod: paymentMethod,
+              selectedItemIds: cleanItemIds 
           };
 
           const res = await orderApi.createOrder(orderPayload);
           
           if (res.success) {
+              // XÓA DÒNG fetchCart() Ở ĐÂY LÀ HẾT LỖI!
               toast.success("Đặt hàng thành công! Vui lòng kiểm tra email.");
-              clearCart();
+
+              refreshCart();
+              
+              // Điều hướng sang trang Thành công ngay lập tức
               navigate('/checkout/success', { state: { order: res.data } });
           }
 
       } catch (error) {
-          console.error(error);
-          toast.error(error.response?.data?.message || "Đặt hàng thất bại");
+          // Bắt lỗi an toàn hơn
+          const errMsg = error?.response?.data?.message || "Có lỗi xảy ra, vui lòng liên hệ admin.";
+          console.error("LỖI THANH TOÁN:", error);
+          toast.error(`Đặt hàng thất bại: ${errMsg}`);
       } finally {
           setLoading(false);
       }
@@ -156,6 +157,10 @@ const CheckoutPage = () => {
   useEffect(() => {
       if(!user) navigate('/login');
   }, [user, navigate]);
+
+  useEffect(() => {
+      window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="bg-light min-vh-100 pb-5">
@@ -167,7 +172,6 @@ const CheckoutPage = () => {
             </Link>
         </div>
 
-        {/* STEP WIZARD */}
         <div className="step-wizard">
             <div className="step-item completed">
                 <div className="step-count">1</div>
@@ -186,9 +190,7 @@ const CheckoutPage = () => {
         </div>
 
         <Row>
-            {/* LEFT: SHIPPING INFO & PAYMENT */}
             <Col lg={7}>
-                {/* 1. THÔNG TIN GIAO HÀNG */}
                 <Card className="border-0 shadow-sm mb-4">
                     <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -197,7 +199,6 @@ const CheckoutPage = () => {
                                 Thông tin giao hàng
                             </h5>
                             
-                            {/* Toggle Button: Chỉ hiện khi user ĐÃ CÓ địa chỉ lưu */}
                             {savedAddresses.length > 0 && (
                                 !useNewAddress ? (
                                     <Button variant="outline-success" size="sm" onClick={() => setUseNewAddress(true)}>
@@ -211,7 +212,6 @@ const CheckoutPage = () => {
                             )}
                         </div>
                         
-                        {/* --- USER INFO CƠ BẢN --- */}
                         <div className="bg-light p-3 rounded mb-3 border d-flex justify-content-between align-items-center">
                             <div className="d-flex gap-3 text-muted small">
                                 <span><FaUser className="me-1"/> {user?.name}</span>
@@ -219,7 +219,6 @@ const CheckoutPage = () => {
                             </div>
                         </div>
 
-                        {/* --- LOGIC HIỂN THỊ FORM --- */}
                         {!useNewAddress && savedAddresses.length > 0 ? (
                             <div className="d-flex flex-column gap-3 animate-fade-in custom-scrollbar" style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '5px' }}>
                                 {savedAddresses.map(addr => (
@@ -320,7 +319,6 @@ const CheckoutPage = () => {
                     </Card.Body>
                 </Card>
 
-                {/* 2. PHƯƠNG THỨC THANH TOÁN */}
                 <Card className="border-0 shadow-sm mb-4 mb-lg-0">
                     <Card.Body className="p-4">
                         <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
@@ -364,7 +362,6 @@ const CheckoutPage = () => {
                 </Card>
             </Col>
 
-            {/* RIGHT: ORDER SUMMARY */}
             <Col lg={5}>
                 <Card className="border-0 shadow-sm sticky-summary">
                     <Card.Header className="bg-white py-3 border-bottom-0">

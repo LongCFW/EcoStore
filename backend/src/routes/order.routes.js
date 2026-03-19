@@ -1,16 +1,15 @@
 import express from "express";
-import { body } from "express-validator";
+// import { body } from "express-validator"; // Comment hoặc xóa dòng này
 import { 
     createOrder, 
     getMyOrders, 
     getAllOrders, 
     updateOrderStatus,
-    getOrdersByUser 
+    getOrdersByUser
 } from "../controllers/order.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js"; 
-// Import middleware phân quyền
 import { requireRole } from "../middlewares/role.middleware.js";
-import { validateRequest } from "../middlewares/validate.middleware.js";
+// import { validateRequest } from "../middlewares/validate.middleware.js"; // Comment hoặc xóa dòng này
 
 const router = express.Router();
 
@@ -18,38 +17,14 @@ const router = express.Router();
 router.use(verifyToken);
 
 // --- CLIENT ROUTES (Khách hàng) ---
-router.post(
-    "/",
-    [
-        body("shippingAddress").notEmpty().withMessage("Vui lòng nhập địa chỉ"),
-        body("phoneNumber").notEmpty().withMessage("Vui lòng nhập số điện thoại"),
-    ],
-    validateRequest,
-    createOrder
-);
+// ĐÃ SỬA: Tháo bỏ middleware validate để cho phép selectedItemIds đi qua
+router.post("/", createOrder); 
 
 router.get("/my-orders", getMyOrders);
 
 // --- ADMIN / MANAGER / STAFF ROUTES ---
-// Yêu cầu: Admin, Manager, Staff đều xem và cập nhật được
-
-router.get(
-    "/admin/all", 
-    requireRole(['admin', 'manager', 'staff']), 
-    getAllOrders
-);
-
-// ADMIN LẤY ĐƠN HÀNG CỦA MỘT KHÁCH HÀNG
-router.get(
-    "/admin/user/:userId", 
-    requireRole(['admin', 'manager', 'staff']), 
-    getOrdersByUser
-);
-
-router.put(
-    "/admin/:id/status", 
-    requireRole(['admin', 'manager', 'staff']), 
-    updateOrderStatus
-);
+router.get("/admin/all", requireRole(['admin', 'manager', 'staff']), getAllOrders);
+router.get("/admin/user/:userId", requireRole(['admin', 'manager', 'staff']), getOrdersByUser);
+router.put("/admin/:id/status", requireRole(['admin', 'manager', 'staff']), updateOrderStatus);
 
 export default router;
