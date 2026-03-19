@@ -1,72 +1,105 @@
-// src/services/product.service.js
 import Product from "../models/product.js";
-import Category from "../models/category.js"; // <--- Cần nhập kho Category để kiểm tra
+import Category from "../models/category.js";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import Order from "../models/order.js";
+import Cart from "../models/cart.js";
+
+// Cấu hình đường dẫn giống bên Category
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const UPLOADS_DIR = path.join(__dirname, "../../uploads");
+
+const deleteLocalImage = async (imageUrl) => {
+    if (imageUrl && imageUrl.includes('/uploads/')) {
+        try {
+            const filename = imageUrl.split('/uploads/')[1];
+            const filePath = path.join(UPLOADS_DIR, filename);
+            await fs.unlink(filePath);
+            console.log(`[CLEANUP] Đã xóa ảnh rác: ${filename}`);
+        } catch (err) {
+            console.error(`[LỖI] Không thể xóa ảnh: ${imageUrl}`, err.message);
+        }
+    }
+};
 
 export const createProductService = async (data) => {
-    // 1. Kiểm tra Category có tồn tại không
-    // Lưu ý: data.categoryId là cái frontend gửi lên
     const categoryExists = await Category.findById(data.categoryId);
-    
-    if (!categoryExists) {
-        throw new Error("Category not found");
-    }
+    if (!categoryExists) throw new Error("Category not found");
 
-    // 2. Nếu Category OK, thì mới tạo Product
-    // Mongoose sẽ tự chạy hook tạo slug và sku như ta đã định nghĩa trong Model
     const newProduct = await Product.create(data);
-    
     return newProduct;
 };
 
-// Chúng ta cũng cần hàm lấy danh sách sản phẩm để tí nữa test
 export const getAllProductsService = async () => {
-    // 1. LOGIC ẨN SẢN PHẨM KHI DANH MỤC BỊ ẨN
-    // Tìm ID của các danh mục đang set isActive: false
     const hiddenCategories = await Category.find({ isActive: false }).select('_id');
     const hiddenIds = hiddenCategories.map(c => c._id);
 
-    // Tạo query: Nếu có danh mục ẩn thì loại bỏ sản phẩm thuộc danh mục đó
     const query = {};
     if (hiddenIds.length > 0) {
-        query.categoryId = { $nin: hiddenIds }; // $nin = Không nằm trong
+        query.categoryId = { $nin: hiddenIds };
     }
 
-    // 2. LẤY DỮ LIỆU (Trả về Array như cũ)
-    // Không dùng .limit() hay .skip() để Frontend tự xử lý phân trang
     return await Product.find(query)
-        .populate("categoryId", "_id name slug") // Populate để lấy tên danh mục
+        .populate("categoryId", "_id name slug")
         .sort({ createdAt: -1 });
 };
 
 export const getProductBySlugService = async (slug) => {
-    // Tìm sản phẩm theo slug, populate category để lấy tên danh mục
-    const product = await Product.findOne({ slug: slug })
+    return await Product.findOne({ slug: slug })
         .populate("categoryId", "_id name slug");
-        
-    return product;
 };
 
-// Lấy sản phẩm liên quan
 export const getRelatedProductsService = async (categoryId, currentProductId) => {
     return await Product.find({
-        categoryId: categoryId,       // Cùng danh mục
-        _id: { $ne: currentProductId } // Loại trừ ID hiện tại ($ne = not equal)
+        categoryId: categoryId,
+        _id: { $ne: currentProductId }
     })
-    .limit(4) // Chỉ lấy 4 sản phẩm
-    .populate("categoryId", "_id name slug"); // Populate để lấy thông tin đẹp
+        .limit(4)
+        .populate("categoryId", "_id name slug");
 };
 
 // --- UPDATE PRODUCT ---
 export const updateProductService = async (id, data) => {
-    // Tìm và update, trả về dữ liệu mới sau khi update
+    const oldProduct = await Product.findById(id);
+    if (!oldProduct) throw new Error("Product not found");
+
+    // Xóa ảnh cũ nếu update mảng ảnh mới hoàn toàn khác (Logic phức tạp hơn một chút)
+    // Để đơn giản và an toàn nhất, tạm thời ta cập nhật data, chuyện so sánh mảng ảnh 
+    // có thể xử lý chuyên sâu ở API upload ảnh riêng biệt sau này.
     const updatedProduct = await Product.findByIdAndUpdate(id, data, { new: true });
-    if (!updatedProduct) throw new Error("Product not found");
     return updatedProduct;
 };
 
-// --- DELETE PRODUCT ---
+// --- DELETE PRODUCT (HARD DELETE AN TOÀN) ---
 export const deleteProductService = async (id) => {
-    const deletedProduct = await Product.findByIdAndDelete(id);
-    if (!deletedProduct) throw new Error("Product not found");
-    return deletedProduct;
+    // 1. KIỂM TRA RÀNG BUỘC (SAFE DELETE)
+    // Kiểm tra trong Đơn hàng
+    const orderExists = await Order.findOne({ "items.productId": id });
+    if (orderExists) {
+        throw new Error("Không thể xóa! Sản phẩm này đã tồn tại trong lịch sử đơn hàng.");
+    }
+
+    // Kiểm tra trong Giỏ hàng của khách (Tùy chọn: Bạn có thể bỏ qua bước này nếu muốn ép xóa khỏi giỏ)
+    const cartExists = await Cart.findOne({ "items.productId": id });
+    if (cartExists) {
+        throw new Error("Không thể xóa! Sản phẩm đang nằm trong giỏ hàng của khách.");
+    }
+
+    // 2. Tìm và tiến hành dọn rác
+    const product = await Product.findById(id);
+    if (!product) throw new Error("Product not found");
+
+    // Dọn rác ảnh vật lý
+    if (product.images && product.images.length > 0) {
+        for (const img of product.images) {
+            await deleteLocalImage(img.imageUrl);
+        }
+    }
+
+    // 3. Xóa vĩnh viễn
+    await Product.findByIdAndDelete(id);
+    
+    return product;
 };
