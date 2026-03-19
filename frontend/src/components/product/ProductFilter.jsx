@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Form, Button, Accordion, Spinner } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Form, Button, Accordion } from 'react-bootstrap';
 import { FaFilter, FaRedo } from 'react-icons/fa';
-import categoryApi from '../../services/category.service';
 
-// Định nghĩa các khoảng giá (Value dạng chuỗi "min-max" để dễ xử lý trên URL)
 const PRICE_RANGES = [
     { label: "Dưới 100k", value: "0-100000" },
     { label: "100k - 300k", value: "100000-300000" },
@@ -12,79 +10,38 @@ const PRICE_RANGES = [
 ];
 
 const ProductFilter = ({ onFilter, onReset, availableBrands = [], initialFilters }) => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // --- STATE ---
-  const [selectedCats, setSelectedCats] = useState([]);
-  const [selectedBrands, setSelectedBrands] = useState([]);
-  const [selectedPrices, setSelectedPrices] = useState([]); 
-
-  // Sync state khi initialFilters thay đổi (F5 hoặc URL change)
-  useEffect(() => {
-      if (initialFilters) {
-          setSelectedCats(initialFilters.categoryIds || []);
-          setSelectedBrands(initialFilters.brands || []);
-          setSelectedPrices(initialFilters.priceRanges || []); 
-      }
-  }, [initialFilters]);
-
-  // Lấy danh mục từ API
-  useEffect(() => {
-      const fetchCategories = async () => {
-          try {
-              const response = await categoryApi.getAll({ params: { is_active: true } });
-              const list = response.categories || response.data || [];
-              setCategories(list);
-          } catch (error) {
-              console.error("Lỗi tải danh mục:", error);
-          } finally {
-              setLoading(false);
-          }
-      };
-      fetchCategories();
-  }, []);
+  // --- STATE (Khởi tạo trực tiếp từ props, dẹp bỏ useEffect copy state) ---
+  const [selectedBrands, setSelectedBrands] = useState(() => initialFilters?.brands || []);
+  const [selectedPrices, setSelectedPrices] = useState(() => initialFilters?.priceRanges || []); 
 
   // --- LOGIC GỬI DỮ LIỆU ---
-  const triggerFilter = (newCats, newBrands, newPrices) => {
+  const triggerFilter = (newBrands, newPrices) => {
       onFilter({
-          categoryIds: newCats ?? selectedCats,
+          categoryIds: [], // Category giờ xử lý trên URL, nên để trống
           brands: newBrands ?? selectedBrands,
           priceRanges: newPrices ?? selectedPrices 
       });
   };
 
-  // 1. Chọn Danh mục
-  const handleCatChange = (catId) => {
-      const newCats = selectedCats.includes(catId) 
-          ? selectedCats.filter(id => id !== catId) 
-          : [...selectedCats, catId];
-      setSelectedCats(newCats);
-      triggerFilter(newCats, null, null);
-  };
-
-  // 2. Chọn Brand
   const handleBrandChange = (brandName) => {
       const newBrands = selectedBrands.includes(brandName) 
           ? selectedBrands.filter(b => b !== brandName) 
           : [...selectedBrands, brandName];
       setSelectedBrands(newBrands);
-      triggerFilter(null, newBrands, null);
+      triggerFilter(newBrands, null);
   };
 
-  // 3. Chọn Giá (Đã đổi sang Checkbox logic)
   const handlePriceChange = (rangeValue) => {
       const newPrices = selectedPrices.includes(rangeValue)
-          ? selectedPrices.filter(p => p !== rangeValue) // Bỏ chọn
-          : [...selectedPrices, rangeValue]; // Chọn thêm
+          ? selectedPrices.filter(p => p !== rangeValue) 
+          : [...selectedPrices, rangeValue]; 
       
       setSelectedPrices(newPrices);
-      triggerFilter(null, null, newPrices);
+      triggerFilter(null, newPrices);
   };
 
-  // 4. Reset
   const handleResetFilter = () => {
-      setSelectedCats([]);
       setSelectedBrands([]);
       setSelectedPrices([]);
       onReset(); 
@@ -97,29 +54,18 @@ const ProductFilter = ({ onFilter, onReset, availableBrands = [], initialFilters
             <FaFilter className="text-success" />
             <h5 className="fw-bold m-0">Bộ Lọc</h5>
         </div>
-        <Button variant="link" size="sm" className="text-muted text-decoration-none p-0" onClick={handleResetFilter}>
+        <Button variant="link" size="sm" className="text-danger fw-bold text-decoration-none p-0" onClick={handleResetFilter}>
             <FaRedo className="me-1"/> Reset
         </Button>
       </div>
 
       <Accordion defaultActiveKey={['0', '1', '2']} alwaysOpen flush>
         
-        {/* DANH MỤC */}
+        {/* ĐÁNH GIÁ (GIỮ CHỖ) */}
         <Accordion.Item eventKey="0" className="border-0 mb-3">
-            <Accordion.Header><span className="fw-bold">Danh Mục</span></Accordion.Header>
+            <Accordion.Header><span className="fw-bold">Đánh giá</span></Accordion.Header>
             <Accordion.Body className="px-0 pt-2">
-                {loading ? <Spinner animation="border" variant="success" size="sm" /> : (
-                    categories.length > 0 ? categories.map((cat) => (
-                        <Form.Check 
-                            key={cat._id} 
-                            type="checkbox" 
-                            label={cat.name} 
-                            checked={selectedCats.includes(cat._id)}
-                            onChange={() => handleCatChange(cat._id)}
-                            className="mb-2 text-secondary custom-checkbox" 
-                        />
-                    )) : <p className="text-muted small">Đang cập nhật...</p>
-                )}
+                <p className="text-muted small">Tính năng đang cập nhật...</p>
             </Accordion.Body>
         </Accordion.Item>
 
@@ -131,7 +77,7 @@ const ProductFilter = ({ onFilter, onReset, availableBrands = [], initialFilters
                     {PRICE_RANGES.map((range, idx) => (
                         <Form.Check 
                             key={idx}
-                            type="checkbox" // Đổi thành checkbox
+                            type="checkbox"
                             id={`price-${idx}`}
                             label={range.label}
                             checked={selectedPrices.includes(range.value)}

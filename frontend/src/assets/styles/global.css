@@ -194,3 +194,91 @@ body {
 .animate-slide-up {
     animation: slideUp 0.3s ease forwards;
 }
+
+/* =========================================
+   MEGA MENU DROPDOWN STYLES (HEADER)
+   ========================================= */
+
+.custom-nav-dropdown {
+    position: relative;
+}
+
+/* Hộp Menu chính bay xuống */
+.custom-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 220px;
+    background-color: #fff;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    z-index: 1050;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* Kích hoạt Menu khi Hover vào chữ "Danh mục" */
+.custom-nav-dropdown:hover .custom-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.custom-dropdown-item-wrapper {
+    position: relative;
+}
+
+/* Từng dòng chữ trong Menu */
+.custom-dropdown-item {
+    display: block;
+    padding: 10px 20px;
+    color: #444;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.custom-dropdown-item:hover {
+    background-color: #f1f8e9; /* Nền xanh nhạt khi hover */
+    color: #2e7d32;
+}
+
+/* Sub-Menu (Bay ngang ra bên phải) */
+.custom-submenu {
+    position: absolute;
+    top: 0;
+    left: 100%; /* Đẩy sang ngang */
+    min-width: 200px;
+    background-color: #fff;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px);
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    z-index: 1051;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* Hover vào dòng chứa menu con thì Sub-menu bay ra */
+.custom-dropdown-item-wrapper:hover .custom-submenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.custom-submenu-item {
+    display: block;
+    padding: 8px 20px;
+    color: #555;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.custom-submenu-item:hover {
+    background-color: #f1f8e9;
+    color: #2e7d32;
+    padding-left: 25px; /* Thụt đầu dòng lả lướt khi hover */
+}
