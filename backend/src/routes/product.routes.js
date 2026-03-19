@@ -11,6 +11,7 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
 import { body } from "express-validator";
 import { validateRequest } from "../middlewares/validate.middleware.js";
+import { logActivity } from '../middlewares/activity.middleware.js';
 
 const router = express.Router();
 
@@ -29,6 +30,9 @@ router.get(
     requireRole(["admin", "manager"]), 
     getAllProducts
 );
+
+// Từ dòng này trở xuống, mọi POST/PUT/DELETE đều bị tự động ghi log!
+router.use(logActivity);
 
 // 2. Tạo sản phẩm
 router.post(

@@ -8,20 +8,39 @@ const getUserId = (req) => {
 // --- GET ALL USERS ---
 export const getAllUsers = async (req, res, next) => {
     try {
-        const { page = 1, limit = 10, search = "", status = "All" } = req.query;
+        // Nhận thêm specificRole
+        const { page = 1, limit = 10, search = "", status = "All", roleType, specificRole } = req.query;
 
-        const { users, count } = await userService.findUsers({
+        const { users, count, globalTotal, globalActive, globalLocked } = await userService.findUsers({
             page: +page,
             limit: +limit,
             search,
-            status
+            status,
+            roleType,
+            specificRole // Truyền xuống service
         });
 
         res.json({
             users,
             totalPages: Math.ceil(count / limit),
             currentPage: +page,
-            totalUsers: count
+            totalUsers: globalTotal,   
+            activeUsers: globalActive, 
+            lockedUsers: globalLocked  
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// --- ADMIN UPDATE USER ---
+export const adminUpdateUser = async (req, res, next) => {
+    try {
+        const updatedUser = await userService.adminUpdateUser(req.params.id, req.body);
+        res.json({
+            success: true,
+            message: "Cập nhật thông tin thành công!",
+            user: updatedUser
         });
     } catch (err) {
         next(err);
@@ -130,6 +149,20 @@ export const toggleWishlist = async (req, res, next) => {
             req.body.productId
         );
         res.json({ success: true, ...result });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// --- TẠO TÀI KHOẢN NHÂN VIÊN ---
+export const createStaff = async (req, res, next) => {
+    try {
+        const newStaff = await userService.createStaffService(req.body);
+        res.status(201).json({
+            success: true,
+            message: "Tạo tài khoản nhân viên thành công!",
+            data: newStaff
+        });
     } catch (err) {
         next(err);
     }

@@ -6,34 +6,25 @@ import sendEmail from "../utils/sendEmail.js"; // Import hàm gửi mail
 import { orderConfirmationTemplate } from "../utils/emailTemplates.js";
 
 // --- CLIENT: TẠO ĐƠN HÀNG ---
-export const createOrderService = async (userId, orderData) => {
-    // 1. Lấy giỏ hàng
+export const createOrderService = async (userId, orderData) => {   
     const cart = await Cart.findOne({ userId });
-    if (!cart || cart.items.length === 0) {
-        throw new Error("Giỏ hàng trống");
-    }
+    if (!cart || cart.items.length === 0) throw new Error("Giỏ hàng trống");
 
     let totalAmount_cents = 0;
     const orderItems = [];
 
-    // 2. Duyệt qua từng sản phẩm để check tồn kho và tính tiền
     for (const item of cart.items) {
         const product = await Product.findById(item.productId);
         if (!product) throw new Error(`Sản phẩm không tồn tại: ${item.productId}`);
 
-        // Logic lấy biến thể: Mặc định lấy variants[0] như bạn yêu cầu
         const variant = product.variants?.[0]; 
         if (!variant) throw new Error(`Sản phẩm ${product.name} lỗi dữ liệu (không có variant)`);
 
-        if (variant.stock < item.quantity) {
-            throw new Error(`Sản phẩm ${product.name} đã hết hàng`);
-        }
+        if (variant.stock < item.quantity) throw new Error(`Sản phẩm ${product.name} đã hết hàng`);
 
-        // Trừ tồn kho
         variant.stock -= item.quantity;
-        await product.save(); // Lưu lại sản phẩm đã trừ kho
+        await product.save(); 
 
-        // Snapshot dữ liệu vào Order (Lưu lại giá và tên tại thời điểm mua)
         orderItems.push({
             productId: product._id,
             name: product.name,
@@ -45,20 +36,17 @@ export const createOrderService = async (userId, orderData) => {
         totalAmount_cents += variant.price_cents * item.quantity;
     }
 
-    // 3. Tính phí ship (Logic Backend tự tính để bảo mật)
     const SHIPPING_FEE = 30000;
     const FREESHIP_THRESHOLD = 300000;
     let finalTotal = totalAmount_cents;
     
-    // Nếu tổng đơn nhỏ hơn 300k thì cộng ship, ngược lại free
     if (totalAmount_cents < FREESHIP_THRESHOLD) {
         finalTotal += SHIPPING_FEE;
     }
 
-    // 4. Tạo Order
     const newOrder = await Order.create({
         userId,
-        orderNumber: `ORD-${Date.now()}`, // Mã đơn hàng duy nhất
+        orderNumber: `ORD-${Date.now()}`,
         items: orderItems,
         totalAmount_cents: finalTotal,
         shippingAddress: orderData.shippingAddress,
@@ -68,28 +56,31 @@ export const createOrderService = async (userId, orderData) => {
         status: "pending"
     });
 
-    // 5. Xóa giỏ hàng sau khi đặt thành công
     cart.items = [];
     await cart.save();
 
-    // 6 GỬI EMAIL XÁC NHẬN (NON-BLOCKING)
-    // Logic: Gửi mail là tác vụ phụ, không nên để user phải chờ nó gửi xong mới báo thành công.
-    // Nên không dùng await ở đây, hoặc dùng try-catch riêng để không làm fail đơn hàng.
-    // Lấy thông tin user
     const user = await User.findById(userId);
+
+    // --- GHI LOG: THANH TOÁN (ĐẶT HÀNG) ---
+    if (user) {
+        user.activityLogs.push({
+            action: "ĐẶT HÀNG THÀNH CÔNG",
+            details: `Đã đặt đơn hàng #${newOrder.orderNumber} trị giá ${finalTotal.toLocaleString()}đ.`
+        });
+        await user.save();
+    }
+
+    // 6 GỬI EMAIL XÁC NHẬN (NON-BLOCKING)
     if (user && user.email) {
-        // Promise độc lập
         sendEmail({
             email: user.email,
             subject: `Xác nhận đơn hàng #${newOrder.orderNumber} - EcoStore`,
             html: orderConfirmationTemplate(newOrder, user.name || "Khách hàng"),
         }).catch(err => {
-            // Nếu gửi lỗi thì chỉ log ra server để admin biết, không làm phiền người dùng
             console.error("⚠️ Lỗi gửi mail ngầm (Không ảnh hưởng đơn hàng):", err.message);
         });
     }
 
-    // Trả về kết quả NGAY LẬP TỨC, không cần đợi mail
     return newOrder;
 };
 
