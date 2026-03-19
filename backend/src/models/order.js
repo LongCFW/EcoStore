@@ -40,6 +40,7 @@ const OrderSchema = new Schema({
 
     paymentMethod: { type: String, default: "COD" },
     paymentStatus: { type: String, default: "unpaid" },
+    payosOrderCode: { type: Number },
 
     // Coupons 
     coupons: [{

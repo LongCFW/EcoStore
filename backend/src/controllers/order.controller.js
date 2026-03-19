@@ -1,9 +1,9 @@
-import { 
-    createOrderService, 
-    getMyOrdersService, 
-    getAllOrdersService, 
+import {
+    createOrderService,
+    getMyOrdersService,
+    getAllOrdersService,
     updateOrderStatusService,
-    getOrdersByUserIdForAdmin
+    getOrdersByUserIdForAdmin, handlePayOSWebhookService
 } from "../services/order.service.js";
 
 // Client: Tạo đơn
@@ -63,5 +63,24 @@ export const getOrdersByUser = async (req, res, next) => {
         res.status(200).json({ success: true, data: orders });
     } catch (error) {
         next(error);
+    }
+};
+
+// --- XỬ LÝ WEBHOOK TỪ PAYOS ---
+export const payosWebhook = async (req, res) => {
+    try {
+        // Chuyển dữ liệu cho Service xử lý
+        await handlePayOSWebhookService(req.body);
+
+        // PayOS yêu cầu trả về status 200 và json có dạng thế này để xác nhận đã nhận được thông báo
+        res.status(200).json({
+            success: true,
+            error: 0,
+            message: "Webhook processed",
+            data: null
+        });
+    } catch (error) {
+        // Dù lỗi cũng trả về 200 để PayOS không bị kẹt vòng lặp spam request
+        res.status(200).json({ success: false, error: -1, message: error.message });
     }
 };

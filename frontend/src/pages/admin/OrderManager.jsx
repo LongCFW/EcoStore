@@ -1,42 +1,73 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, Badge, Pagination, Spinner } from 'react-bootstrap';
-import { FaSearch, FaFilter, FaEye, FaDownload, FaShoppingBag, FaCheckCircle, FaTruck, FaClock, FaTimesCircle } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaEye, FaShoppingBag, FaCheckCircle, FaTruck, FaClock, FaTimesCircle, FaSyncAlt, FaCreditCard } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import OrderDetailModal from '../../components/admin/OrderDetailModal';
 import orderApi from '../../services/order.service';
-import toast from 'react-hot-toast';
 import '../../assets/styles/admin.css';
-import { useSearchParams } from 'react-router-dom';
+
+// Component Highlight Text giống StaffManager
+const HighlightText = ({ text, highlight }) => {
+  if (!highlight || !text) return <>{text}</>;
+  const safeHighlight = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.toString().split(new RegExp(`(${safeHighlight})`, 'gi'));
+  return (
+    <>{parts.map((part, index) => part.toLowerCase() === highlight.toLowerCase() ? <mark key={index} className="bg-warning text-dark px-1 rounded p-0">{part}</mark> : <span key={index}>{part}</span>)}</>
+  );
+};
 
 const OrderManager = () => {
-  const [searchParams, setSearchParams] = useSearchParams(); // <--- 2. HOOK URL
-
-  // --- 3. LẤY GIÁ TRỊ TỪ URL (Thay cho useState mặc định) ---
-  const filterStatus = searchParams.get('status') || 'All';
-  const currentPage = parseInt(searchParams.get('page') || '1');
-  const searchTerm = searchParams.get('search') || '';
-
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // Stats State (Thống kê nhanh) - Giữ nguyên
-  const [stats, setStats] = useState({ total: 0, pending: 0, shipping: 0, completed: 0 });
+  // STATE TỪ URL PARAMETERS
+  const searchTerm = searchParams.get('search') || '';
+  const filterStatus = searchParams.get('status') || 'All';
+  const filterPayment = searchParams.get('payment') || 'All'; // Lọc hình thức thanh toán
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
 
-  // Modal State - Giữ nguyên (Modal không cần lưu URL cũng được, hoặc lưu tùy ý)
+  const [searchInput, setSearchInput] = useState(searchTerm);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, pending: 0, shipping: 0, completed: 0, cancelled: 0 });
+
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const itemsPerPage = 5; 
+  const itemsPerPage = 7; 
 
-  // --- FETCH DATA ---
+  // Hàm cập nhật URL Params (Tối ưu performance)
+  const updateParams = useCallback((key, value) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value && value !== 'All' && value !== '') newParams.set(key, value);
+    else newParams.delete(key);
+    
+    if (key !== "page") newParams.set("page", "1");
+    setSearchParams(newParams);
+  }, [searchParams, setSearchParams]);
+
+  // Debounce Search
+  useEffect(() => {
+    const timer = setTimeout(() => { 
+        if (searchInput !== searchTerm) updateParams("search", searchInput); 
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput, searchTerm, updateParams]);
+
+  useEffect(() => { setSearchInput(searchTerm); }, [searchTerm]);
+
+  const handleResetFilters = () => {
+    setSearchParams({});
+    setSearchInput("");
+  };
+
+  // FETCH ALL DATA (Để thống kê luôn đúng, lọc ở phía Client)
   const fetchOrders = useCallback(async () => {
       setLoading(true);
       try {
-          // Logic gọi API giữ nguyên
-          const res = await orderApi.getAllOrders({ status: filterStatus === 'All' ? '' : filterStatus });
+          const res = await orderApi.getAllOrders({}); // Lấy tất cả
           if (res.success) {
               setOrders(res.data);
-              
-              // Logic tính stats giữ nguyên
               const all = res.data;
               setStats({
                   total: all.length,
@@ -52,13 +83,10 @@ const OrderManager = () => {
       } finally {
           setLoading(false);
       }
-  }, [filterStatus]); // Phụ thuộc vào filterStatus từ URL
+  }, []);
 
-  useEffect(() => {
-      fetchOrders();
-  }, [fetchOrders]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  // --- ACTIONS (Giữ nguyên logic xử lý) ---
   const handleView = (order) => {
       setSelectedOrder(order);
       setShowModal(true);
@@ -69,10 +97,8 @@ const OrderManager = () => {
           const res = await orderApi.updateOrderStatus(id, newStatus);
           if (res.success) {
               toast.success("Cập nhật trạng thái thành công!");
-              setOrders(prevOrders => 
-                  prevOrders.map(o => o._id === id ? { ...o, status: newStatus } : o)
-              );
-              fetchOrders(); 
+              setOrders(prevOrders => prevOrders.map(o => o._id === id ? { ...o, status: newStatus } : o));
+              fetchOrders(); // Refresh to update stats
           }
       } catch {
           toast.error("Cập nhật thất bại");
@@ -89,190 +115,209 @@ const OrderManager = () => {
       }
   };
 
-  // --- CLIENT-SIDE FILTERING (Cho Search) ---
-  // Logic lọc client giữ nguyên
+  // --- CLIENT-SIDE FILTERING ---
   const filteredOrders = orders.filter(order => {
     const s = searchTerm.toLowerCase();    
-    const orderNumber = (order.orderNumber || "").toLowerCase();
-    const customerName = (order.userId?.name || "").toLowerCase();
-    const phoneNumber = (order.phoneNumber || "").toLowerCase();
+    const matchSearch = (order.orderNumber || "").toLowerCase().includes(s) || 
+                        (order.userId?.name || "").toLowerCase().includes(s) ||
+                        (order.phoneNumber || "").toLowerCase().includes(s);
+    
+    const matchStatus = filterStatus === 'All' || order.status === filterStatus;
+    const matchPayment = filterPayment === 'All' || (order.paymentMethod || '').toLowerCase() === filterPayment.toLowerCase();
 
-    return orderNumber.includes(s) || 
-           customerName.includes(s) ||
-           phoneNumber.includes(s);
+    return matchSearch && matchStatus && matchPayment;
   });
 
   // --- PAGINATION ---
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
 
-  // --- 4. CẬP NHẬT HÀM CHANGE ĐỂ SET URL ---
-  const handlePageChange = (pageNumber) => {
-      setSearchParams({ status: filterStatus, search: searchTerm, page: pageNumber });
-  };
-
-  const handleSearchChange = (e) => {
-      // Khi search thay đổi, reset về page 1
-      setSearchParams({ status: filterStatus, search: e.target.value, page: 1 });
-  };
-
-  const handleFilterChange = (e) => {
-      // Khi status thay đổi, reset về page 1, giữ nguyên search
-      setSearchParams({ status: e.target.value, search: searchTerm, page: 1 });
-  };
-
   return (
     <div className="animate-fade-in">
+      
       {/* 1. HEADER */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
         <div>
             <h2 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Quản Lý Đơn Hàng</h2>
-            <p className="text-muted small m-0">Theo dõi và xử lý đơn hàng của khách</p>
+            <p className="text-muted small m-0 mt-1">Theo dõi và xử lý đơn hàng của khách hàng</p>
         </div>
-        <Button variant="outline-success" className="rounded-pill px-4 fw-bold d-flex align-items-center gap-2" onClick={fetchOrders}>
-            <FaDownload /> Làm mới
-        </Button>
       </div>
 
-      {/* 2. MINI STATS BAR */}
-      <Row className="g-3 mb-4 row-cols-2 row-cols-md-5"> 
+      {/* 2. STATS CARDS (ĐỒNG BỘ GIAO DIỆN) */}
+      <Row className="mb-4 g-3 row-cols-2 row-cols-md-5">
         <Col>
-            <div className="stat-card p-3 d-flex align-items-center gap-3 h-100">
-                <div className="rounded-circle bg-light p-3 text-primary"><FaShoppingBag size={20}/></div>
-                <div><h4 className="fw-bold m-0 text-dark">{stats.total}</h4><small className="text-muted">Tổng đơn</small></div>
-            </div>
+          <div className="bg-white p-3 rounded-4 shadow-sm border d-flex align-items-center gap-3 h-100 hover-scale-slight">
+             <div className="bg-dark bg-opacity-10 text-dark rounded-circle d-flex justify-content-center align-items-center flex-shrink-0" style={{width: '50px', height: '50px'}}><FaShoppingBag size={20}/></div>
+             <div>
+                <h4 className="fw-bold m-0 text-dark">{stats.total}</h4>
+                <span className="text-muted small">Tổng Đơn</span>
+             </div>
+          </div>
         </Col>
         <Col>
-            <div className="stat-card p-3 d-flex align-items-center gap-3 h-100">
-                <div className="rounded-circle bg-warning bg-opacity-25 p-3 text-warning"><FaClock size={20}/></div>
-                <div><h4 className="fw-bold m-0 text-dark">{stats.pending}</h4><small className="text-muted">Chờ xử lý</small></div>
-            </div>
+          <div className="bg-white p-3 rounded-4 shadow-sm border d-flex align-items-center gap-3 h-100 hover-scale-slight">
+             <div className="bg-warning bg-opacity-25 text-warning rounded-circle d-flex justify-content-center align-items-center flex-shrink-0" style={{width: '50px', height: '50px'}}><FaClock size={20}/></div>
+             <div>
+                <h4 className="fw-bold m-0 text-dark">{stats.pending}</h4>
+                <span className="text-muted small">Chờ Xử Lý</span>
+             </div>
+          </div>
         </Col>
         <Col>
-            <div className="stat-card p-3 d-flex align-items-center gap-3 h-100">
-                <div className="rounded-circle bg-primary bg-opacity-25 p-3 text-primary"><FaTruck size={20}/></div>
-                <div><h4 className="fw-bold m-0 text-dark">{stats.shipping}</h4><small className="text-muted">Đang giao</small></div>
-            </div>
+          <div className="bg-white p-3 rounded-4 shadow-sm border d-flex align-items-center gap-3 h-100 hover-scale-slight">
+             <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex justify-content-center align-items-center flex-shrink-0" style={{width: '50px', height: '50px'}}><FaTruck size={20}/></div>
+             <div>
+                <h4 className="fw-bold m-0 text-dark">{stats.shipping}</h4>
+                <span className="text-muted small">Đang Giao</span>
+             </div>
+          </div>
         </Col>
         <Col>
-            <div className="stat-card p-3 d-flex align-items-center gap-3 h-100">
-                <div className="rounded-circle bg-success bg-opacity-25 p-3 text-success"><FaCheckCircle size={20}/></div>
-                <div><h4 className="fw-bold m-0 text-dark">{stats.completed}</h4><small className="text-muted">Hoàn thành</small></div>
-            </div>
+          <div className="bg-white p-3 rounded-4 shadow-sm border d-flex align-items-center gap-3 h-100 hover-scale-slight">
+             <div className="bg-success bg-opacity-10 text-success rounded-circle d-flex justify-content-center align-items-center flex-shrink-0" style={{width: '50px', height: '50px'}}><FaCheckCircle size={20}/></div>
+             <div>
+                <h4 className="fw-bold m-0 text-dark">{stats.completed}</h4>
+                <span className="text-muted small">Hoàn Thành</span>
+             </div>
+          </div>
         </Col>
-                
         <Col>
-            <div className="stat-card p-3 d-flex align-items-center gap-3 h-100">
-                <div className="rounded-circle bg-danger bg-opacity-25 p-3 text-danger"><FaTimesCircle size={20}/></div>
-                <div><h4 className="fw-bold m-0 text-dark">{stats.cancelled}</h4><small className="text-muted">Đã hủy</small></div>
-            </div>
+          <div className="bg-white p-3 rounded-4 shadow-sm border d-flex align-items-center gap-3 h-100 hover-scale-slight">
+             <div className="bg-danger bg-opacity-10 text-danger rounded-circle d-flex justify-content-center align-items-center flex-shrink-0" style={{width: '50px', height: '50px'}}><FaTimesCircle size={20}/></div>
+             <div>
+                <h4 className="fw-bold m-0 text-dark">{stats.cancelled}</h4>
+                <span className="text-muted small">Đã Hủy</span>
+             </div>
+          </div>
         </Col>
       </Row>
 
-      {/* 3. FILTERS */}
-      <div className="table-card p-3 mb-4">
-          <Row className="g-3">
-              <Col md={5}>
+      {/* 3. BỘ LỌC CÙNG HÀNG VỚI RESET */}
+      <div className="table-card p-3 mb-4 bg-white border rounded shadow-sm">          
+          <Row className="g-3 align-items-center">
+              <Col xs={12} md={4}>
                   <InputGroup>
-                      <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
+                      <InputGroup.Text className="bg-light border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>                      
                       <Form.Control 
-                        type="text" 
-                        placeholder="Tìm mã đơn, tên khách, SĐT..." 
-                        className="border-start-0 shadow-none"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
+                        type="text" placeholder="Tìm mã đơn, tên khách, SĐT..." 
+                        className="border-start-0 shadow-none bg-light"
+                        value={searchInput} onChange={(e) => setSearchInput(e.target.value)} 
                       />
                   </InputGroup>
               </Col>
-              <Col md={3}>
-                  <Form.Select 
-                    className="shadow-none" 
-                    value={filterStatus}
-                    onChange={handleFilterChange}
-                  >
-                      <option value="All">Tất cả trạng thái</option>
-                      <option value="pending">Chờ xử lý</option>
-                      <option value="shipping">Đang vận chuyển</option>
-                      <option value="delivered">Hoàn thành</option>
-                      <option value="cancelled">Đã hủy</option>
-                  </Form.Select>
+              
+              <Col xs={12} md={3}>                  
+                  <InputGroup>
+                    <InputGroup.Text className="bg-light border-end-0"><FaFilter className="text-muted" size={14}/></InputGroup.Text>
+                    <Form.Select className="border-start-0 shadow-none bg-light" value={filterStatus} onChange={(e) => updateParams("status", e.target.value)}>
+                        <option value="All">-- Tất cả trạng thái --</option>
+                        <option value="pending">Chờ xử lý</option>
+                        <option value="shipping">Đang vận chuyển</option>
+                        <option value="delivered">Hoàn thành</option>
+                        <option value="cancelled">Đã hủy</option>
+                    </Form.Select>
+                  </InputGroup>
               </Col>
-              <Col md={2}>
-                  <Button variant="outline-secondary" className="w-100 d-flex align-items-center justify-content-center gap-2">
-                      <FaFilter /> Lọc
+
+              {/* Lọc hình thức thanh toán */}
+              <Col xs={12} md={3}>                  
+                  <InputGroup>
+                    <InputGroup.Text className="bg-light border-end-0"><FaCreditCard className="text-muted" size={14}/></InputGroup.Text>
+                    <Form.Select className="border-start-0 shadow-none bg-light" value={filterPayment} onChange={(e) => updateParams("payment", e.target.value)}>
+                        <option value="All">-- Hình thức TT --</option>
+                        <option value="cod">Thanh toán COD</option>
+                        <option value="banking">Chuyển khoản (VietQR)</option>
+                    </Form.Select>
+                  </InputGroup>
+              </Col>
+
+              <Col xs={12} md={2}>
+                  <Button variant="light" onClick={handleResetFilters} className="w-100 fw-bold d-flex align-items-center justify-content-center gap-2 border shadow-sm text-secondary hover-scale">
+                      <FaSyncAlt /> Làm mới
                   </Button>
               </Col>
           </Row>
       </div>
 
-      {/* 4. ORDERS TABLE */}
-      <div className="table-card overflow-hidden">
-          {loading ? (
-              <div className="text-center py-5"><Spinner animation="border" variant="primary"/></div>
-          ) : (
-              <Table hover responsive className="custom-table align-middle mb-0">
-                  <thead>
+      {/* 4. ORDERS TABLE (CÓ SCROLLBAR) */}
+      <div className="table-card border rounded shadow-sm bg-white" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <Table hover responsive className="custom-table align-middle mb-0">
+              <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <tr>
+                      <th className="ps-4 py-3">Mã Đơn</th>
+                      <th className="py-3">Khách Hàng</th>
+                      <th className="py-3 text-center">Ngày Đặt</th>
+                      <th className="py-3 text-center">Tổng Tiền</th>
+                      <th className="py-3 text-center">Thanh Toán</th>
+                      <th className="py-3 text-center">Trạng Thái</th>
+                      <th className="text-end pe-4 py-3">Chi Tiết</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {loading ? (
+                      <tr><td colSpan={7} className="text-center py-5 border-bottom-0"><Spinner animation="border" variant="success"/></td></tr>
+                  ) : currentItems.length > 0 ? (
+                      currentItems.map((order) => (
+                        <tr key={order._id}>
+                            <td className="ps-4 fw-bold text-success">
+                                <HighlightText text={order.orderNumber} highlight={searchTerm} />
+                            </td>
+                            <td>
+                                <div className="fw-bold" style={{color: 'var(--admin-text)'}}>
+                                    <HighlightText text={order.userId?.name || "Khách Vãng Lai"} highlight={searchTerm} />
+                                </div>
+                                <small className="text-muted">
+                                    <HighlightText text={order.phoneNumber} highlight={searchTerm} />
+                                </small>
+                            </td>
+                            <td className="text-center">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                            <td className="fw-bold text-center text-dark">{order.totalAmount_cents?.toLocaleString()} đ</td>
+                            <td className="text-center">
+                                <Badge bg="light" text="dark" className="border text-uppercase shadow-sm">
+                                    {order.paymentMethod === 'banking' ? 'VietQR' : order.paymentMethod}
+                                </Badge>
+                            </td>
+                            <td className="text-center">{getStatusBadge(order.status)}</td>
+                            <td className="text-end pe-4">
+                                <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-primary hover-scale px-3" onClick={() => handleView(order)}>
+                                    <FaEye className="me-1"/> Xem
+                                </Button>
+                            </td>
+                        </tr>
+                      ))
+                  ) : (
                       <tr>
-                          <th className="ps-4">Mã Đơn</th>
-                          <th>Khách Hàng</th>
-                          <th>Ngày Đặt</th>
-                          <th>Tổng Tiền</th>
-                          <th>Thanh Toán</th>
-                          <th>Trạng Thái</th>
-                          <th className="text-end pe-4">Chi Tiết</th>
+                          <td colSpan={7} className="border-bottom-0 p-0">
+                              <div className="d-flex flex-column align-items-center justify-content-center w-100" style={{ minHeight: '200px' }}>
+                                  <FaShoppingBag size={40} className="mb-3 text-muted opacity-50"/>
+                                  <h6 className="text-muted mb-0">Không tìm thấy đơn hàng nào phù hợp.</h6>
+                              </div>
+                          </td>
                       </tr>
-                  </thead>
-                  <tbody>
-                      {currentItems.length > 0 ? (
-                          currentItems.map((order) => (
-                            <tr key={order._id}>
-                                <td className="ps-4 fw-bold text-success">{order.orderNumber}</td>
-                                <td>
-                                    <div className="fw-bold" style={{color: 'var(--admin-text)'}}>{order.userId?.name || "Guest"}</div>
-                                    <small className="text-muted">{order.phoneNumber}</small>
-                                </td>
-                                <td>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
-                                <td className="fw-bold">{order.totalAmount_cents?.toLocaleString()} đ</td>
-                                <td><Badge bg="light" text="dark" className="border text-uppercase">{order.paymentMethod}</Badge></td>
-                                <td>{getStatusBadge(order.status)}</td>
-                                <td className="text-end pe-4">
-                                    <Button variant="light" size="sm" className="rounded-pill border shadow-sm text-primary hover-scale px-3" onClick={() => handleView(order)}>
-                                        <FaEye className="me-1"/> Xem
-                                    </Button>
-                                </td>
-                            </tr>
-                          ))
-                      ) : (
-                          <tr>
-                              <td colSpan="7" className="text-center py-5 text-muted">
-                                  Không tìm thấy đơn hàng nào phù hợp.
-                              </td>
-                          </tr>
-                      )}
-                  </tbody>
-              </Table>
-          )}
-          
-          {/* 5. PAGINATION */}
-          {totalPages > 1 && (
-              <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column">
-                  <Pagination className="eco-pagination mb-2">
-                      <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
-                      {[...Array(totalPages)].map((_, idx) => (
-                          <Pagination.Item key={idx + 1} active={idx + 1 === currentPage} onClick={() => handlePageChange(idx + 1)}>
-                              {idx + 1}
-                          </Pagination.Item>
-                      ))}
-                      <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
-                  </Pagination>
-                  <small className="text-muted">
-                      Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredOrders.length)} trên tổng số {filteredOrders.length} đơn hàng
-                  </small>
-              </div>
-          )}
+                  )}
+              </tbody>
+          </Table>
       </div>
+      
+      {/* 5. PAGINATION */}
+      {totalPages > 1 && (
+          <div className="p-3 border-top d-flex justify-content-center align-items-center flex-column bg-white rounded-bottom shadow-sm mt-2">
+              <Pagination className="eco-pagination mb-2">
+                  <Pagination.Prev onClick={() => updateParams("page", currentPage - 1)} disabled={currentPage === 1} />
+                  {[...Array(totalPages)].map((_, idx) => (
+                      <Pagination.Item key={idx + 1} active={idx + 1 === currentPage} onClick={() => updateParams("page", idx + 1)}>
+                          {idx + 1}
+                      </Pagination.Item>
+                  ))}
+                  <Pagination.Next onClick={() => updateParams("page", currentPage + 1)} disabled={currentPage === totalPages} />
+              </Pagination>
+              <small className="text-muted">
+                  Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredOrders.length)} trên tổng số {filteredOrders.length} đơn hàng
+              </small>
+          </div>
+      )}
 
       {/* MODAL CHI TIẾT */}
       <OrderDetailModal 

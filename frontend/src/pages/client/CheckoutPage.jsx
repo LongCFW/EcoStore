@@ -135,13 +135,18 @@ const CheckoutPage = () => {
           const res = await orderApi.createOrder(orderPayload);
           
           if (res.success) {
-              // XÓA DÒNG fetchCart() Ở ĐÂY LÀ HẾT LỖI!
-              toast.success("Đặt hàng thành công! Vui lòng kiểm tra email.");
-
               refreshCart();
               
-              // Điều hướng sang trang Thành công ngay lập tức
-              navigate('/checkout/success', { state: { order: res.data } });
+              // NẾU CÓ TRẢ VỀ LINK THANH TOÁN (BANKING)
+              if (res.data.checkoutUrl) {
+                  // Chuyển thẳng người dùng sang trang của PayOS
+                  window.location.href = res.data.checkoutUrl;
+              } 
+              // NẾU LÀ COD BÌNH THƯỜNG
+              else {
+                  toast.success("Đặt hàng thành công! Vui lòng kiểm tra email.");
+                  navigate('/checkout/success', { state: { order: res.data.order } });
+              }
           }
 
       } catch (error) {
@@ -351,11 +356,12 @@ const CheckoutPage = () => {
                                     <div className="bg-light p-2 rounded text-primary"><FaUniversity size={24}/></div>
                                     <div>
                                         <div className="fw-bold">Chuyển khoản ngân hàng (VietQR)</div>
-                                        <div className="small text-muted">Quét mã QR - Xác nhận tự động</div>
-                                        <Badge bg="warning" text="dark" className="mt-1">Sắp ra mắt</Badge>
+                                        <div className="small text-muted">Quét mã QR - Xác nhận tự động</div>                                     
                                     </div>
-                                </div>
-                                <div className="custom-radio disabled opacity-50"></div> 
+                                </div>                                
+                                <div className="custom-radio">
+                                    {paymentMethod === 'banking' && <div className="dot"></div>}
+                                </div>                                
                             </div>
                         </div>
                     </Card.Body>
