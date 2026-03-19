@@ -41,3 +41,24 @@ export const orderConfirmationTemplate = (order, userName) => {
     </div>
     `;
 };
+
+export const otpTemplate = (otpCode, type = 'register') => {
+    const title = type === 'register' ? "Xác thực tài khoản EcoStore" : "Khôi phục mật khẩu EcoStore";
+    const desc = type === 'register' 
+        ? "Cảm ơn bạn đã đăng ký tài khoản tại EcoStore. Vui lòng sử dụng mã OTP dưới đây để hoàn tất quá trình đăng ký."
+        : "Chúng tôi nhận được yêu cầu khôi phục mật khẩu của bạn. Vui lòng sử dụng mã OTP dưới đây để thiết lập mật khẩu mới.";
+
+    return `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; text-align: center;">
+        <h2 style="color: #2e7d32;">${title} 🌿</h2>
+        <p style="color: #555; line-height: 1.5;">${desc}</p>
+        <div style="margin: 30px 0; padding: 20px; background-color: #f1f8e9; border-radius: 8px;">
+            <span style="display: block; font-size: 14px; color: #2e7d32; margin-bottom: 10px;">Mã xác thực của bạn (Có hiệu lực 5 phút)</span>
+            <strong style="font-size: 32px; color: #1b5e20; letter-spacing: 8px;">${otpCode}</strong>
+        </div>
+        <p style="font-size: 13px; color: #888;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và bảo mật tài khoản của mình.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #aaa;">EcoStore - Sống xanh mỗi ngày.</p>
+    </div>
+    `;
+};

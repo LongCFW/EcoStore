@@ -1,28 +1,30 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const sendEmail = async (options) => {
   try {
-    // Cập nhật cách lấy kết quả từ Resend
-    const { data, error } = await resend.emails.send({
-      from: 'EcoStore <onboarding@resend.dev>',
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: `"EcoStore" <${process.env.MAIL_USER}>`,
       to: options.email,
       subject: options.subject,
       html: options.html,
-    });
+    };
 
-    if (error) {
-      console.error("❌ Resend API trả về lỗi:", error);
-      return null;
-    }
-    
-    console.log("✅ Email sent API Success. ID:", data.id);
-    return data;
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully. Message ID:", info.messageId);
+    return true;
   } catch (err) {
-    console.error("❌ Lỗi hệ thống gửi mail:", err);
+    console.error("Lỗi hệ thống gửi mail:", err);
+    throw new Error("Không thể gửi email lúc này.");
   }
 };
 

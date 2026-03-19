@@ -1,6 +1,6 @@
 import express from "express";
 import { body } from "express-validator";
-import { login, register, verifyReset, resetPassword, updateProfile, changePassword, getMe } from "../controllers/auth.controller.js";
+import { login, logout, register, sendOtp, resetPassword, updateProfile, changePassword, getMe } from "../controllers/auth.controller.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
 import { updateAvatar } from '../controllers/auth.controller.js';
 import multer from 'multer';
@@ -9,20 +9,18 @@ import { verifyToken } from "../middlewares/auth.middleware.js";
 import fs from 'fs';
 
 const router = express.Router();
+
 // 1. Cấu hình Multer (Lưu ảnh vào thư mục 'uploads')
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const dir = 'uploads/';
-        // Kiểm tra xem thư mục có tồn tại không, nếu không thì tạo mới
         if (!fs.existsSync(dir)){
             fs.mkdirSync(dir, { recursive: true });
         }
         cb(null, dir);
     },
     filename: function (req, file, cb) {
-        // Đặt tên file an toàn (tránh trùng lặp)
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        // Lấy đuôi file gốc (ví dụ .jpg, .png)
         const ext = path.extname(file.originalname);
         cb(null, 'avatar-' + uniqueSuffix + ext);
     }
@@ -35,31 +33,35 @@ router.post("/login", [
     body("password").notEmpty().withMessage("Password required"),
 ], validateRequest, login);
 
+// Logout
+router.post("/logout", logout);
+
+// YÊU CẦU GỬI OTP
+router.post("/send-otp", [
+    body("email").isEmail().withMessage("Email không hợp lệ"),
+    body("type").isIn(['register', 'reset']).withMessage("Loại OTP không hợp lệ")
+], validateRequest, sendOtp);
+
 // Register 
 router.post("/register", [
     body("name").notEmpty(),
     body("email").isEmail(),
     body("password").isLength({ min: 6 }),
     body("phone").notEmpty().withMessage("Phone required"),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP phải có 6 chữ số")
 ], validateRequest, register);
 
-
-// Verify Identity
-router.post("/verify-reset", [
-    body("email").isEmail(),
-    body("phone").notEmpty()
-], validateRequest, verifyReset);
-
-// Reset Password
+// Reset Password (Đã gộp chung check OTP và đổi pass vào đây)
 router.post("/reset-password", [
     body("email").isEmail(),
-    body("phone").notEmpty(),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP phải có 6 chữ số"),
     body("newPassword").isLength({ min: 6 })
 ], validateRequest, resetPassword);
 
+// Các tính năng Profile
 router.post('/upload-avatar', verifyToken, upload.single('avatar'), updateAvatar);
 router.put('/profile/update', verifyToken, updateProfile);
 router.put('/profile/change-password', verifyToken, changePassword);
-
 router.get("/me", verifyToken, getMe);
+
 export default router;
