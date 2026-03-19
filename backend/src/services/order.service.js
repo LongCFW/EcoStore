@@ -114,3 +114,8 @@ export const updateOrderStatusService = async (orderId, status) => {
     if (!order) throw new Error("Order not found");
     return order;
 };
+
+// LẤY ĐƠN HÀNG CỦA MỘT USER CỤ THỂ 
+export const getOrdersByUserIdForAdmin = async (userId) => {
+    return await Order.find({ userId }).sort({ createdAt: -1 });
+};

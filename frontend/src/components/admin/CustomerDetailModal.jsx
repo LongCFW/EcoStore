@@ -4,21 +4,24 @@ import { FaUserSlash, FaUserCheck, FaHistory, FaEye, FaEyeSlash, FaTimes, FaCog 
 import toast from 'react-hot-toast';
 import userApi from '../../services/user.service'; 
 import axiosClient from '../../services/axiosClient';
+import orderApi from '../../services/order.service';
 
 const CustomerDetailModal = ({ show, handleClose, customer, handleToggleStatus, refreshData }) => {
   const [key, setKey] = useState('general');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  
   const [localCustomer, setLocalCustomer] = useState(null);
+  
+  // STATE: Quản lý Đơn hàng của khách
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
-  // Đã xóa hoàn toàn currentPassword khỏi state
   const [formData, setFormData] = useState({
       name: '', email: '', phone: '', newPassword: ''      
   });
 
   useEffect(() => {
-      if (customer) {
+      if (customer && show) {
           setLocalCustomer(customer);
           setFormData({
               name: customer.name || '',
@@ -27,8 +30,25 @@ const CustomerDetailModal = ({ show, handleClose, customer, handleToggleStatus, 
               newPassword: ''      
           });
           setKey('general'); 
+          
+          // GỌI API LẤY ĐƠN HÀNG
+          fetchCustomerOrders(customer._id);
       }
   }, [customer, show]);
+
+  const fetchCustomerOrders = async (userId) => {
+      setLoadingOrders(true);
+      try {
+          const res = await orderApi.getOrdersByUserAdmin(userId);
+          if (res.success) {
+              setOrders(res.data);
+          }
+      } catch (error) {
+          console.error("Lỗi lấy đơn hàng của khách:", error);
+      } finally {
+          setLoadingOrders(false);
+      }
+  };
 
   if (!localCustomer) return null;
 
@@ -36,15 +56,21 @@ const CustomerDetailModal = ({ show, handleClose, customer, handleToggleStatus, 
       ? `${localCustomer.addresses[0].addressLine}, ${localCustomer.addresses[0].city}` 
       : "Chưa cập nhật địa chỉ";
 
+  // TÍNH TOÁN DỮ LIỆU
+  const totalSpent = orders
+      .filter(o => o.status === 'delivered') 
+      .reduce((sum, o) => sum + o.totalAmount_cents, 0);
+
+  let membershipRank = "Mới";
+  if (totalSpent > 5000000) membershipRank = "VIP";
+  else if (totalSpent > 2000000) membershipRank = "Thân thiết";
+
   const handleChange = (e) => {
       setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleUpdateCustomer = async (e) => {
       e.preventDefault();
-      
-      // Đã xóa đoạn IF chặn bắt nhập mật khẩu cũ ở đây
-
       setIsUpdating(true);
       try {
           await userApi.adminUpdateUser(localCustomer._id, formData);
@@ -54,14 +80,23 @@ const CustomerDetailModal = ({ show, handleClose, customer, handleToggleStatus, 
           
           const res = await axiosClient.get(`/users/${localCustomer._id}`);
           setLocalCustomer(res);
-          
-          // Chỉ reset ô mật khẩu mới cho trống trải
           setFormData(prev => ({...prev, newPassword: ''}));
           
       } catch (error) {
           toast.error(error.response?.data?.message || "Lỗi cập nhật. Vui lòng thử lại.");
       } finally {
           setIsUpdating(false);
+      }
+  };
+
+  const renderStatusBadge = (status) => {
+      switch(status) {
+          case 'pending': return <Badge bg="warning" text="dark">Chờ xử lý</Badge>;
+          case 'confirmed': return <Badge bg="info">Đã xác nhận</Badge>;
+          case 'shipping': return <Badge bg="primary">Đang giao</Badge>;
+          case 'delivered': return <Badge bg="success">Thành công</Badge>;
+          case 'cancelled': return <Badge bg="danger">Đã hủy</Badge>;
+          default: return <Badge bg="secondary">{status}</Badge>;
       }
   };
 
@@ -110,19 +145,44 @@ const CustomerDetailModal = ({ show, handleClose, customer, handleToggleStatus, 
                     <Row className="g-3">
                         <Col sm={6}><small className="text-muted d-block">Địa chỉ mặc định</small> <strong>{primaryAddress}</strong></Col>
                         <Col sm={6}><small className="text-muted d-block">Ngày tham gia</small> <strong>{new Date(localCustomer.createdAt).toLocaleDateString('vi-VN')}</strong></Col>
-                        <Col sm={6}><small className="text-muted d-block">Tổng chi tiêu (Demo)</small> <span className="text-success fw-bold">0 đ</span></Col>
-                        <Col sm={6}><small className="text-muted d-block">Hạng thành viên (Demo)</small> <Badge bg="secondary">Mới</Badge></Col>
+                        <Col sm={6}><small className="text-muted d-block">Tổng chi tiêu</small> <span className="text-success fw-bold">{totalSpent.toLocaleString()} đ</span></Col>
+                        <Col sm={6}>
+                            <small className="text-muted d-block">Hạng thành viên</small> 
+                            <Badge bg={membershipRank === 'VIP' ? 'warning' : membershipRank === 'Thân thiết' ? 'info' : 'secondary'} text={membershipRank === 'VIP' ? 'dark' : 'white'}>
+                                {membershipRank}
+                            </Badge>
+                        </Col>
                     </Row>
                 </div>
 
-                <h6 className="fw-bold mb-3 text-primary"><FaHistory className="me-2"/>Lịch sử mua hàng (Demo)</h6>
-                <div className="table-card overflow-hidden">
+                <h6 className="fw-bold mb-3 text-primary"><FaHistory className="me-2"/>Lịch sử mua hàng</h6>
+                
+                {/* CẬP NHẬT GIAO DIỆN SCROLL Ở ĐÂY */}
+                <div className="border rounded custom-scrollbar" style={{maxHeight: '350px', overflowY: 'auto'}}>
                     <Table size="sm" hover className="mb-0 custom-table align-middle">
-                        <thead className="bg-light">
-                            <tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th></tr>
+                        <thead className="bg-light" style={{ position: 'sticky', top: 0, zIndex: 1, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                            <tr>
+                                <th className="ps-3 py-2">Mã đơn</th>
+                                <th className="py-2">Ngày đặt</th>
+                                <th className="text-end py-2">Tổng tiền</th>
+                                <th className="text-center pe-3 py-2">Trạng thái</th>
+                            </tr>
                         </thead>
                         <tbody>
-                            <tr><td colSpan="4" className="text-center text-muted py-3">Chưa có dữ liệu đơn hàng thực tế</td></tr>
+                            {loadingOrders ? (
+                                <tr><td colSpan="4" className="text-center py-4"><Spinner size="sm" animation="border" variant="success"/></td></tr>
+                            ) : orders.length > 0 ? (
+                                orders.map(order => (
+                                    <tr key={order._id}>
+                                        <td className="fw-bold text-muted ps-3 py-2">{order.orderNumber}</td>
+                                        <td className="py-2">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                                        <td className="text-end fw-bold text-success py-2">{order.totalAmount_cents.toLocaleString()} đ</td>
+                                        <td className="text-center pe-3 py-2">{renderStatusBadge(order.status)}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr><td colSpan="4" className="text-center text-muted py-4">Khách hàng chưa có đơn hàng nào</td></tr>
+                            )}
                         </tbody>
                     </Table>
                 </div>
@@ -150,8 +210,6 @@ const CustomerDetailModal = ({ show, handleClose, customer, handleToggleStatus, 
                         <Form.Label className="fw-bold small text-secondary">Số Điện Thoại</Form.Label>
                         <Form.Control type="tel" name="phone" value={formData.phone} onChange={handleChange} className="shadow-none" required />
                     </Form.Group>
-
-                    {/* Đã gỡ bỏ ô nhập mật khẩu cũ ở đây */}
 
                     <Form.Group className="mb-4">
                         <Form.Label className="fw-bold small text-secondary">Mật Khẩu Mới (Bỏ trống nếu không đổi)</Form.Label>

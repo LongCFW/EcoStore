@@ -4,7 +4,8 @@ import {
     createOrder, 
     getMyOrders, 
     getAllOrders, 
-    updateOrderStatus 
+    updateOrderStatus,
+    getOrdersByUser 
 } from "../controllers/order.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js"; 
 // Import middleware phân quyền
@@ -36,6 +37,13 @@ router.get(
     "/admin/all", 
     requireRole(['admin', 'manager', 'staff']), 
     getAllOrders
+);
+
+// ADMIN LẤY ĐƠN HÀNG CỦA MỘT KHÁCH HÀNG
+router.get(
+    "/admin/user/:userId", 
+    requireRole(['admin', 'manager', 'staff']), 
+    getOrdersByUser
 );
 
 router.put(

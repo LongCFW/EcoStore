@@ -2,7 +2,8 @@ import {
     createOrderService, 
     getMyOrdersService, 
     getAllOrdersService, 
-    updateOrderStatusService 
+    updateOrderStatusService,
+    getOrdersByUserIdForAdmin
 } from "../services/order.service.js";
 
 // Client: Tạo đơn
@@ -50,6 +51,16 @@ export const updateOrderStatus = async (req, res, next) => {
         const { status } = req.body;
         const order = await updateOrderStatusService(id, status);
         res.json({ success: true, message: "Update status success", data: order });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getOrdersByUser = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const orders = await getOrdersByUserIdForAdmin(userId);
+        res.status(200).json({ success: true, data: orders });
     } catch (error) {
         next(error);
     }
