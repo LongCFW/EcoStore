@@ -203,14 +203,26 @@ export const getOrdersByUserIdForAdmin = async (userId) => {
 // --- PAYOS WEBHOOK: NHẬN THÔNG BÁO TỪ NGÂN HÀNG ---
 export const handlePayOSWebhookService = async (webhookBody) => {
     try {
-        // Sử dụng API SDK để verify webhook data
-        const data = await payOS.webhooks.verify(webhookBody);
+        console.log("[Bước 1] Nhận tín hiệu Webhook từ PayOS...");
+        
+        // Giải mã dữ liệu (Không dùng await)
+        const data = payOS.webhooks.verify(webhookBody);
+        console.log("[Bước 2] Dữ liệu giải mã:", data);
 
-        if (data.code === "00") {
-            const order = await Order.findOne({ payosOrderCode: data.orderCode });
+        // Bản mới không dùng data.code === "00" nữa. Chỉ cần check có orderCode là lụm!
+        const orderCode = data.orderCode || webhookBody.data?.orderCode;
 
-            if (order && order.paymentStatus !== "paid") {
-                // 1. Cập nhật trạng thái tự động
+        if (orderCode) {
+            console.log(`[Bước 3] Tìm đơn hàng với mã PayOS: ${orderCode}`);
+            const order = await Order.findOne({ payosOrderCode: Number(orderCode) });
+
+            if (!order) {
+                console.log("[LỖI] Không tìm thấy đơn hàng trong Database!");
+                return { success: true };
+            }
+
+            if (order.paymentStatus !== "paid") {
+                // Cập nhật trạng thái
                 order.paymentStatus = "paid";
                 order.status = "confirmed";
 
@@ -220,42 +232,52 @@ export const handlePayOSWebhookService = async (webhookBody) => {
                 });
 
                 await order.save();
+                console.log("[Bước 4] Đã đổi trạng thái đơn thành PAID.");
 
-                // 2. XÓA ĐỒ TRONG GIỎ HÀNG
+                // XÓA ĐỒ TRONG GIỎ HÀNG
                 const cart = await Cart.findOne({ userId: order.userId });
                 if (cart) {
                     const purchasedProductIds = order.items.map(item => item.productId.toString());
                     cart.items = cart.items.filter(item => !purchasedProductIds.includes(item.productId.toString()));
                     await cart.save();
+                    console.log("[Bước 5] Đã trừ sản phẩm khỏi giỏ hàng.");
                 }
 
-                // 3. Gửi email xác nhận đã thanh toán cho khách
+                // TÌM USER VÀ GỬI EMAIL
                 const buyer = await User.findById(order.userId);
+                const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+                
+                // Gửi email cho khách
                 if (buyer && buyer.email) {
                     sendEmail({
                         email: buyer.email,
                         subject: `Đơn ${order.orderNumber} đã được thanh toán`,
                         html: orderConfirmationTemplate(order, buyer.name || 'Khách hàng')
-                    }).catch(err => console.error('⚠️ Lỗi gửi mail khách (paid):', err.message));
+                    }).then(() => console.log("[Bước 6] Đã gửi mail báo Khách Hàng."))
+                      .catch(err => console.error('Lỗi gửi mail khách:', err.message));
                 }
 
-                // 4. Thông báo admin
-                const adminEmail = process.env.ADMIN_EMAIL;
+                // Thông báo admin
                 if (adminEmail) {
                     sendEmail({
                         email: adminEmail,
-                        subject: `Đơn ${order.orderNumber} đã thanh toán`,
+                        subject: `[TING TING] Đơn ${order.orderNumber} đã thanh toán`,
                         html: adminOrderNotificationTemplate(order, order.paymentMethod, null, buyer)
-                    }).catch(err => console.error('⚠️ Lỗi gửi mail admin (paid):', err.message));
+                    }).then(() => console.log("[Bước 7] Đã gửi mail báo Admin."))
+                      .catch(err => console.error('Lỗi gửi mail admin:', err.message));
                 }
 
-                console.log(`[PAYOS WEBHOOK] Đơn hàng ${order.orderNumber} đã thanh toán thành công và đã dọn giỏ hàng!`);
+                console.log(`[HOÀN TẤT] Xử lý THÀNH CÔNG đơn ${order.orderNumber}!`);
+            } else {
+                console.log("[BỎ QUA] Đơn hàng này đã được xử lý từ trước.");
             }
+        } else {
+            console.log("[LỖI] Không trích xuất được mã orderCode từ Webhook.");
         }
 
         return { success: true };
     } catch (error) {
         console.error("[PAYOS WEBHOOK] Lỗi xác thực:", error.message || error);
-        throw new Error("Invalid Webhook");
+        return { success: false };
     }
 };
