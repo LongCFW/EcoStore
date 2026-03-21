@@ -42,14 +42,19 @@ const Header = () => {
   const categoryTree = useMemo(() => {
       if (!Array.isArray(categories)) return [];
       const validCats = categories.filter(c => c != null);
+      
+      // Lấy danh mục gốc
       const roots = validCats.filter(c => !c.parentId);
       
       return roots.map(root => ({
           ...root,
           children: validCats.filter(c => {
               if (!c.parentId) return false;
+              // Nếu backend trả về object (do populate) thì lấy _id, ngược lại lấy thẳng
               const pId = typeof c.parentId === 'object' ? c.parentId._id : c.parentId;
-              return pId === root._id;
+              
+              // ÉP KIỂU VỀ STRING: Bí quyết để hết lỗi "Mất tích danh mục con"
+              return String(pId) === String(root._id);
           })
       }));
   }, [categories]);

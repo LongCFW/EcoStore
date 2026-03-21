@@ -6,7 +6,7 @@ import {
     getAllOrders, 
     updateOrderStatus,
     getOrdersByUser,
-    payosWebhook
+    payosWebhook, getDashboardStats
 } from "../controllers/order.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js"; 
 import { requireRole } from "../middlewares/role.middleware.js";
@@ -52,6 +52,7 @@ router.get("/my-orders", getMyOrders);
 
 // --- ADMIN / MANAGER / STAFF ROUTES ---
 router.get("/admin/all", requireRole(['admin', 'manager', 'staff']), getAllOrders);
+router.get("/admin/dashboard-stats", requireRole(['admin', 'manager', 'staff']), getDashboardStats);
 router.get("/admin/user/:userId", requireRole(['admin', 'manager', 'staff']), getOrdersByUser);
 router.put("/admin/:id/status", requireRole(['admin', 'manager', 'staff']), updateOrderStatus);
 

@@ -337,10 +337,12 @@ const CategoryModal = ({
                     }
                   >
                     <option value="">-- Click để chọn danh mục cha --</option>
-                    {validParents.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
+                    {validParents
+                      .filter((cat) => !cat.parentId)
+                      .map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
                     ))}
                   </Form.Select>
                 </Form.Group>

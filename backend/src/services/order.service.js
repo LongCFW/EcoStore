@@ -281,3 +281,48 @@ export const handlePayOSWebhookService = async (webhookBody) => {
         return { success: false };
     }
 };
+
+export const getDashboardStats = async (req, res, next) => {
+    try {
+        const totalOrders = await Order.countDocuments();
+        const totalUsers = await User.countDocuments({ "role.name": { $ne: 'admin' } }); // Không đếm admin
+
+        // Tính tổng doanh thu từ các đơn hàng đã thanh toán hoặc hoàn thành
+        const revenueResult = await Order.aggregate([
+            { 
+                $match: { 
+                    $or: [
+                        { paymentStatus: 'paid' },
+                        { status: 'delivered' },
+                        { status: 'completed' }
+                    ]
+                } 
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: "$totalAmount_cents" }
+                }
+            }
+        ]);
+        const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+
+        // Lấy 5 đơn hàng mới nhất
+        const recentOrders = await Order.find()
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate('userId', 'name');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalOrders,
+                totalUsers,
+                totalRevenue,
+                recentOrders
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

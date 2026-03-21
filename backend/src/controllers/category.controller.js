@@ -7,8 +7,18 @@ import {
 
 export const getCategories = async (req, res, next) => {
     try {
-        const { page = 1, limit = 10, search = "", is_active } = req.query;
-        const result = await getCategoriesService({ page, limit, search,onlyActive: is_active === 'true'});
+        // Ép kiểu an toàn. Nếu Frontend lỡ cấu hình sai params, mặc định lấy 1000 luôn!
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 1000; 
+        const search = req.query.search || "";
+        const is_active = req.query.is_active;
+
+        const result = await getCategoriesService({ 
+            page, 
+            limit, 
+            search, 
+            onlyActive: is_active === 'true' || is_active === true 
+        });
         res.json(result);
     } catch (error) {
         next(error);
