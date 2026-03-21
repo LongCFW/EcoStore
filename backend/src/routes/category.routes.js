@@ -9,6 +9,7 @@ import {
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
+import { logActivity } from '../middlewares/activity.middleware.js';
 
 const router = express.Router();
 
@@ -17,6 +18,8 @@ router.get("/", getCategories);
 
 // --- PROTECTED ROUTES (Admin & Manager) ---
 
+// Từ dòng này trở xuống, mọi POST/PUT/DELETE đều bị tự động ghi log!
+router.use(logActivity);
 // 1. Tạo mới
 router.post(
     "/",

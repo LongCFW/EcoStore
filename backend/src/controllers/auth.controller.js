@@ -1,4 +1,4 @@
-import { loginService, registerService, verifyResetService, resetPasswordService } from "../services/auth.service.js";
+import { loginService, registerService, sendOtpService, verifyResetService, resetPasswordService } from "../services/auth.service.js";
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
 
@@ -32,11 +32,25 @@ export const login = async (req, res, next) => {
     }
 };
 
+// --- NHẬN YÊU CẦU GỬI OTP ---
+export const sendOtp = async (req, res, next) => {
+    try {
+        const { email, type } = req.body; 
+        await sendOtpService(email, type);
+        res.status(200).json({ success: true, message: "Mã OTP đã được gửi đến email của bạn." });
+    } catch (error) {
+        if (error.message === "Email already exists" || error.message === "Email không tồn tại trong hệ thống") {
+            error.statusCode = 400; 
+        }
+        next(error);
+    }
+};
+
 export const register = async (req, res, next) => {
     try {
-        const { email, password, name, phone } = req.body;
-        
-        const result = await registerService(email, password, name, phone);
+        // Nhận thêm 'otp' từ client gửi lên
+        const { email, password, name, phone, otp } = req.body;
+        const result = await registerService(email, password, name, phone, otp);
 
         res.status(201).json({
             success: true,
@@ -44,10 +58,8 @@ export const register = async (req, res, next) => {
             message: "User registered successfully"
         });
     } catch (error) {
-        // Xử lý lỗi trùng email
-        if (error.message === "Email already exists") {
-            error.statusCode = 409; // 409 Conflict: Dữ liệu đã tồn tại
-        }
+        if (error.message === "Email already exists") error.statusCode = 409; 
+        if (error.message.includes("OTP")) error.statusCode = 400;
         next(error); 
     }
 };
@@ -67,11 +79,12 @@ export const verifyReset = async (req, res, next) => {
 // --- API: Đổi mật khẩu ---
 export const resetPassword = async (req, res, next) => {
     try {
-        const { email, phone, newPassword } = req.body;
-        await resetPasswordService(email, phone, newPassword);
+        // Thay thế phone bằng otp
+        const { email, otp, newPassword } = req.body;
+        await resetPasswordService(email, newPassword, otp);
         res.status(200).json({ success: true, message: "Password reset successfully" });
     } catch (error) {
-        error.statusCode = 400;
+        if (error.message.includes("OTP")) error.statusCode = 400;
         next(error);
     }
 };
@@ -134,7 +147,7 @@ export const updateAvatar = async (req, res) => {
 };
 
 
-// --- HÀM 1: CẬP NHẬT THÔNG TIN (Tên, SĐT) ---
+// --- CẬP NHẬT THÔNG TIN (Tên, SĐT) ---
 export const updateProfile = async (req, res, next) => {
     try {
         const userId = req.user.userId;
@@ -168,7 +181,7 @@ export const updateProfile = async (req, res, next) => {
     }
 };
 
-// --- HÀM 2: ĐỔI MẬT KHẨU ---
+// --- ĐỔI MẬT KHẨU ---
 export const changePassword = async (req, res, next) => {
     try {
         const userId = req.user.userId;
@@ -218,4 +231,21 @@ export const getMe = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+};
+
+// --- ĐĂNG XUẤT (Xóa Cookie) ---
+export const logout = (req, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Xóa cookie bằng cách set lại với thời gian hết hạn trong quá khứ
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: isProduction ? true : false,
+        sameSite: isProduction ? 'none' : 'lax',
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Đăng xuất thành công"
+    });
 };

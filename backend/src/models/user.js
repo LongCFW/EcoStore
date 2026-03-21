@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+// 1. Định nghĩa Address Schema trước
 const AddressSchema = new Schema({
     fullName: String,
     phone: String,
@@ -12,6 +13,14 @@ const AddressSchema = new Schema({
     isDefault: Boolean
 }, { _id: true });
 
+// 2. Định nghĩa ActivityLog Schema kế tiếp
+const ActivityLogSchema = new Schema({
+    action: { type: String, required: true }, // VD: "ADD_TO_CART", "CHECKOUT", "ADD_WISHLIST"
+    details: { type: String },                // VD: "Thêm sản phẩm Rau Củ vào giỏ hàng"
+    createdAt: { type: Date, default: Date.now }
+});
+
+// 3. Cuối cùng mới định nghĩa User Schema (Sử dụng 2 Schema trên)
 const UserSchema = new Schema({
     email: { type: String, unique: true },
     password_hash: String,
@@ -22,6 +31,7 @@ const UserSchema = new Schema({
     status: { type: Number, default: 1 },
     addresses: [AddressSchema],    
     wishlist: [{ type: Schema.Types.ObjectId, ref: "Product" }],
+    activityLogs: [ActivityLogSchema], // Đã an toàn vì ActivityLogSchema đã khai báo ở trên
     googleId: String,
     email_Verified: Boolean,
     lastLoginAt: Date,
@@ -30,4 +40,3 @@ const UserSchema = new Schema({
 });
 
 export default mongoose.model("User", UserSchema);
-

@@ -1,36 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button, Badge, Row, Col, Modal, Form } from "react-bootstrap";
-import { FaPlus, FaTrash, FaPen, FaMapMarkerAlt, FaCheckCircle, FaSpinner } from "react-icons/fa";
+import { FaPlus, FaTrash, FaPen, FaMapMarkerAlt, FaCheckCircle, FaSpinner, FaMapPin, FaUserAlt, FaPhoneAlt } from "react-icons/fa";
 import userApi from "../../services/user.service";
 import { useAuth } from "../../hooks/useAuth";
 import toast from 'react-hot-toast';
 
 const AddressList = () => {
-  const { user, login } = useAuth(); // login() dùng để update lại User Context
+  const { user, login } = useAuth(); 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true); // Trạng thái tải dữ liệu ban đầu
+  const [fetching, setFetching] = useState(true); 
   
   const [showModal, setShowModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   
-  // State Form
   const [formData, setFormData] = useState({
-      fullName: "",
-      phone: "",
-      addressLine: "",
-      city: "",
-      province: "",
-      isDefault: false
+      fullName: "", phone: "", addressLine: "", city: "", province: "", isDefault: false
   });
 
-  // --- CẢI TIẾN 1: Tự động tải dữ liệu mới nhất khi vào trang ---
   useEffect(() => {
       const fetchLatestProfile = async () => {
           try {
               const res = await userApi.getProfile();
               if (res.success) {
-                  // Cập nhật context và local state
                   login(res.data); 
                   setAddresses(res.data.addresses || []);
               }
@@ -40,19 +32,13 @@ const AddressList = () => {
               setFetching(false);
           }
       };
-
       fetchLatestProfile();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [login]); 
 
-  // Đồng bộ address từ User Context (Dự phòng)
   useEffect(() => {
-      if (user?.addresses) {
-          setAddresses(user.addresses);
-      }
+      if (user?.addresses) setAddresses(user.addresses);
   }, [user]);
 
-  // Hàm refresh data sau khi sửa đổi
   const refreshUser = async () => {
       try {
           const res = await userApi.getProfile();
@@ -65,49 +51,37 @@ const AddressList = () => {
       }
   };
 
-  // Mở modal thêm mới
+  // --- FIX LỖI SẮP XẾP: LUÔN ĐẨY ĐỊA CHỈ MẶC ĐỊNH LÊN ĐẦU ---
+  const sortedAddresses = useMemo(() => {
+      if (!addresses) return [];
+      return [...addresses].sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1));
+  }, [addresses]);
+
   const handleAdd = () => {
       setEditingAddress(null);
-      setFormData({ 
-          fullName: user?.name || "", 
-          phone: user?.phone || "", 
-          addressLine: "", 
-          city: "", 
-          province: "", 
-          isDefault: false 
-      });
+      setFormData({ fullName: user?.name || "", phone: user?.phone || "", addressLine: "", city: "", province: "", isDefault: false });
       setShowModal(true);
   };
 
-  // Mở modal sửa
   const handleEdit = (addr) => {
       setEditingAddress(addr);
       setFormData({
-          fullName: addr.fullName,
-          phone: addr.phone,
-          addressLine: addr.addressLine,
-          city: addr.city,
-          province: addr.province,
-          isDefault: addr.isDefault
+          fullName: addr.fullName, phone: addr.phone, addressLine: addr.addressLine, 
+          city: addr.city, province: addr.province, isDefault: addr.isDefault
       });
       setShowModal(true);
   };
 
-  // Xử lý Lưu
   const handleSave = async () => {
       if (!formData.fullName.trim() || !formData.phone.trim() || !formData.addressLine.trim() || !formData.city.trim() || !formData.province.trim()) {
           toast.error("Vui lòng điền đầy đủ thông tin!");
           return;
       }
-
       setLoading(true);
       try {
           let res;
-          if (editingAddress) {
-              res = await userApi.updateAddress(editingAddress._id, formData);
-          } else {
-              res = await userApi.addAddress(formData);
-          }
+          if (editingAddress) res = await userApi.updateAddress(editingAddress._id, formData);
+          else res = await userApi.addAddress(formData);
 
           if (res.success) {
               toast.success(editingAddress ? "Đã cập nhật địa chỉ!" : "Thêm địa chỉ thành công!");
@@ -121,7 +95,6 @@ const AddressList = () => {
       }
   };
 
-  // Xử lý Xóa
   const handleDelete = async (id) => {
       if (window.confirm("Bạn chắc chắn muốn xóa địa chỉ này?")) {
           try {
@@ -136,13 +109,12 @@ const AddressList = () => {
       }
   };
 
-  // Xử lý Đặt mặc định
   const handleSetDefault = async (id) => {
       try {
           const res = await userApi.setDefaultAddress(id);
           if (res.success) {
               toast.success("Đã đặt làm địa chỉ mặc định");
-              await refreshUser();
+              await refreshUser(); // State đổi -> useMemo sắp xếp lại -> Đẩy lên đầu ngay!
           }
       } catch {
           toast.error("Lỗi cập nhật mặc định");
@@ -157,65 +129,85 @@ const AddressList = () => {
     <div className="profile-content-card animate-fade-in">
       <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <h4 className="fw-bold mb-0 text-success"><FaMapMarkerAlt className="me-2"/>Sổ địa chỉ</h4>
-        <Button variant="success" size="sm" className="rounded-pill px-3 shadow-sm fw-bold" onClick={handleAdd}>
-          <FaPlus className="me-1" /> Thêm địa chỉ
+        <Button variant="success" size="sm" className="rounded-pill px-4 shadow-sm fw-bold d-flex align-items-center gap-2" onClick={handleAdd}>
+          <FaPlus /> Thêm địa chỉ mới
         </Button>
       </div>
 
-      {/* --- CẢI TIẾN 2: THANH CUỘN (SCROLLBAR) --- */}
-      <div style={{ maxHeight: '500px', overflowY: 'auto', paddingRight: '5px' }} className="custom-scrollbar">
-          {addresses.length === 0 ? (
+      <div className="custom-scrollbar" style={{ maxHeight: '500px', overflowY: 'auto', paddingRight: '10px' }}>
+          {sortedAddresses.length === 0 ? (
               <div className="text-center py-5 text-muted bg-light rounded-4 border border-dashed">
-                  <FaMapMarkerAlt size={40} className="mb-3 opacity-50"/>
-                  <p>Bạn chưa lưu địa chỉ nào.</p>
-                  <Button variant="outline-success" size="sm" onClick={handleAdd}>Thêm ngay</Button>
+                  <FaMapMarkerAlt size={50} className="mb-3 text-secondary opacity-50"/>
+                  <p className="fs-5 fw-medium">Bạn chưa lưu địa chỉ nào.</p>
+                  <Button variant="outline-success" className="rounded-pill px-4" onClick={handleAdd}>Thêm ngay</Button>
               </div>
           ) : (
-              addresses.map((item) => (
-                <div key={item._id} className={`border rounded-4 p-3 mb-3 bg-white shadow-sm transition-all position-relative ${item.isDefault ? 'border-success border-2' : 'border-light'}`}>
-                  <Row className="align-items-center">
-                    <Col md={9}>
-                      <div className="d-flex align-items-center flex-wrap gap-2 mb-2">
-                          <span className="fw-bold fs-5">{item.fullName}</span>
-                          <div className="vr mx-1"></div>
-                          <span className="text-muted">{item.phone}</span>
-                          
-                          {item.isDefault && (
-                              <Badge bg="success" className="d-flex align-items-center gap-1 py-1 px-2 rounded-pill">
-                                  <FaCheckCircle size={10}/> Mặc định
-                              </Badge>
-                          )}
-                      </div>
-                      <p className="text-secondary mb-0 small opacity-75">
-                          {item.addressLine}, {item.city}, {item.province}
-                      </p>
-                    </Col>
-                    
-                    <Col md={3} className="d-flex align-items-center justify-content-md-end gap-2 mt-3 mt-md-0">
-                      {!item.isDefault && (
-                          <Button variant="outline-secondary" size="sm" className="rounded-pill text-xs px-2 border-0" onClick={() => handleSetDefault(item._id)}>
-                              Đặt mặc định
-                          </Button>
-                      )}
-                      <Button variant="light" size="sm" className="rounded-circle p-2 text-primary hover-scale shadow-sm border" title="Chỉnh sửa" onClick={() => handleEdit(item)}>
-                          <FaPen size={14}/>
-                      </Button>
-                      <Button variant="light" size="sm" className="rounded-circle p-2 text-danger hover-scale shadow-sm border" title="Xóa" onClick={() => handleDelete(item._id)}>
-                          <FaTrash size={14}/>
-                      </Button>
-                    </Col>
-                  </Row>
-                </div>
-              ))
+              <Row className="g-3">
+                  {sortedAddresses.map((item) => (
+                      <Col xs={12} key={item._id}>
+                          <div className={`p-4 bg-white rounded-4 shadow-sm border transition-all ${item.isDefault ? 'border-success border-2 bg-success bg-opacity-10' : 'border-light'}`}>
+                              
+                              <Row className="align-items-start">
+                                  <Col md={12}>
+                                      <div className="d-flex align-items-center flex-wrap gap-2 mb-3">
+                                          <div className="d-flex align-items-center gap-2 text-dark">
+                                              <FaUserAlt className="text-secondary opacity-50"/>
+                                              <span className="fw-bold fs-5">{item.fullName}</span>
+                                          </div>
+                                          <div className="vr mx-2 bg-secondary opacity-25"></div>
+                                          <div className="d-flex align-items-center gap-2 text-dark">
+                                              <FaPhoneAlt className="text-secondary opacity-50" size={14}/>
+                                              <span className="fw-medium">{item.phone}</span>
+                                          </div>
+                                          
+                                          {item.isDefault && (
+                                              <Badge bg="success" className="ms-auto d-flex align-items-center gap-1 py-2 px-3 rounded-pill shadow-sm">
+                                                  <FaCheckCircle size={12}/> Mặc định
+                                              </Badge>
+                                          )}
+                                      </div>
+                                      <div className="d-flex align-items-start gap-2 text-secondary mb-3">
+                                          <FaMapPin className="mt-1 flex-shrink-0 text-success opacity-75"/>
+                                          <p className="mb-0 lh-lg">
+                                              {item.addressLine}, {item.city}, {item.province}
+                                          </p>
+                                      </div>
+                                  </Col>
+                              </Row>
+
+                              {/* --- THANH CÔNG CỤ ĐÃ ĐƯỢC LÀM MỊN LẠI --- */}
+                              <div className="d-flex align-items-center justify-content-between pt-3 border-top border-secondary border-opacity-10">
+                                  <div>
+                                      {!item.isDefault && (
+                                          <Button variant="link" className="text-decoration-none text-success fw-medium p-0" onClick={() => handleSetDefault(item._id)}>
+                                              Thiết lập mặc định
+                                          </Button>
+                                      )}
+                                  </div>
+                                  <div className="d-flex gap-3">
+                                      <Button variant="link" className="text-decoration-none text-primary p-0 d-flex align-items-center gap-1" onClick={() => handleEdit(item)}>
+                                          <FaPen size={12}/> Sửa
+                                      </Button>
+                                      <Button variant="link" className="text-decoration-none text-danger p-0 d-flex align-items-center gap-1" onClick={() => handleDelete(item._id)}>
+                                          <FaTrash size={12}/> Xóa
+                                      </Button>
+                                  </div>
+                              </div>
+
+                          </div>
+                      </Col>
+                  ))}
+              </Row>
           )}
       </div>
 
-      {/* Modal Thêm/Sửa (Giữ nguyên) */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered className="eco-modal">
-          <Modal.Header closeButton className="border-0">
-              <Modal.Title className="fw-bold text-success">{editingAddress ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới'}</Modal.Title>
+          <Modal.Header closeButton className="border-0 bg-light">
+              <Modal.Title className="fw-bold text-success d-flex align-items-center gap-2">
+                  <FaMapMarkerAlt /> {editingAddress ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới'}
+              </Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="p-4">
               <Form>
                   <Row>
                       <Col md={6}>
@@ -225,7 +217,7 @@ const AddressList = () => {
                                 type="text" 
                                 value={formData.fullName}
                                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                                className="modern-input"
+                                className="shadow-none border-secondary border-opacity-25"
                                 placeholder="Nhập họ tên"
                               />
                           </Form.Group>
@@ -237,7 +229,7 @@ const AddressList = () => {
                                 type="text" 
                                 value={formData.phone}
                                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                className="modern-input"
+                                className="shadow-none border-secondary border-opacity-25"
                                 placeholder="Nhập SĐT"
                               />
                           </Form.Group>
@@ -245,13 +237,13 @@ const AddressList = () => {
                   </Row>
                   
                   <Form.Group className="mb-3">
-                      <Form.Label className="small fw-bold text-muted">ĐỊA CHỈ (Số nhà, Đường) <span className="text-danger">*</span></Form.Label>
+                      <Form.Label className="small fw-bold text-muted">ĐỊA CHỈ CHI TIẾT <span className="text-danger">*</span></Form.Label>
                       <Form.Control 
                         as="textarea" rows={2} 
                         value={formData.addressLine}
                         onChange={(e) => setFormData({...formData, addressLine: e.target.value})}
-                        className="modern-input"
-                        placeholder="Ví dụ: 123 Đường Nguyễn Huệ"
+                        className="shadow-none border-secondary border-opacity-25"
+                        placeholder="Số nhà, Tên đường, Phường/Xã..."
                       />
                   </Form.Group>
                   <Row>
@@ -262,8 +254,8 @@ const AddressList = () => {
                                 type="text" 
                                 value={formData.city}
                                 onChange={(e) => setFormData({...formData, city: e.target.value})}
-                                className="modern-input"
-                                placeholder="Quận 1"
+                                className="shadow-none border-secondary border-opacity-25"
+                                placeholder="Quận/Huyện..."
                               />
                           </Form.Group>
                       </Col>
@@ -274,27 +266,29 @@ const AddressList = () => {
                                 type="text" 
                                 value={formData.province}
                                 onChange={(e) => setFormData({...formData, province: e.target.value})}
-                                className="modern-input"
-                                placeholder="Hồ Chí Minh"
+                                className="shadow-none border-secondary border-opacity-25"
+                                placeholder="Tỉnh/Thành phố..."
                               />
                           </Form.Group>
                       </Col>
                   </Row>
                   
-                  <Form.Check 
-                    type="switch" 
-                    id="default-switch" 
-                    label="Đặt làm địa chỉ mặc định" 
-                    checked={formData.isDefault}
-                    onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
-                    className="fw-medium text-success mt-2"
-                  />
+                  <div className="bg-light p-3 rounded mt-2 border">
+                      <Form.Check 
+                        type="switch" 
+                        id="default-switch" 
+                        label="Đặt làm địa chỉ mặc định" 
+                        checked={formData.isDefault}
+                        onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
+                        className="fw-bold text-success m-0"
+                      />
+                  </div>
               </Form>
           </Modal.Body>
-          <Modal.Footer className="border-0">
+          <Modal.Footer className="border-0 pt-0 pb-4 pe-4">
               <Button variant="light" onClick={() => setShowModal(false)} className="rounded-pill px-4">Hủy</Button>
               <Button variant="success" className="rounded-pill px-4 fw-bold shadow-sm" onClick={handleSave} disabled={loading}>
-                  {loading ? <FaSpinner className="fa-spin"/> : "Lưu Địa Chỉ"}
+                  {loading ? <FaSpinner className="fa-spin"/> : "Lưu Thông Tin"}
               </Button>
           </Modal.Footer>
       </Modal>

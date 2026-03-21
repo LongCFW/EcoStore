@@ -16,7 +16,9 @@ const orderApi = {
     },
     updateOrderStatus: (orderId, status) => {
         return axiosClient.put(`/orders/admin/${orderId}/status`, { status });
-    }
+    },
+
+    getOrdersByUserAdmin: (userId) => axiosClient.get(`/orders/admin/user/${userId}`)
 };
 
 export default orderApi;

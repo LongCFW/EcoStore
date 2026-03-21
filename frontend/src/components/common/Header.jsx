@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Navbar, Container, Nav, Form, Button, Badge, Dropdown, Offcanvas } from "react-bootstrap";
-import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart } from "react-icons/fa";
-import { Link, NavLink, useNavigate } from "react-router-dom"; // Import useNavigate
+import { FaShoppingCart, FaUserCircle, FaSearch, FaLeaf, FaBars, FaSignInAlt, FaUserPlus, FaSignOutAlt, FaBoxOpen, FaHeart, FaChevronRight, FaBars as FaMenu } from "react-icons/fa";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
+import categoryApi from '../../services/category.service';
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -13,61 +14,141 @@ const Header = () => {
   const userAvatar = user?.avatarUrl; 
   const userName = user?.name || "User";
 
-  // --- LOGIC TÌM KIẾM MỚI ---
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // STATE DANH MỤC
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCats = async () => {
+        try {
+            const res = await categoryApi.getAll({ limit: 1000, is_active: true });
+            let catList = [];
+            if (Array.isArray(res)) catList = res;
+            else if (res?.categories && Array.isArray(res.categories)) catList = res.categories;
+            else if (res?.data && Array.isArray(res.data.categories)) catList = res.data.categories;
+            else if (res?.data && Array.isArray(res.data)) catList = res.data;
+            
+            setCategories(catList || []);
+        } catch (error) {
+            console.error("Không tải được danh mục lên Header", error);
+            setCategories([]);
+        }
+    };
+    fetchCats();
+  }, []);
+
+  const categoryTree = useMemo(() => {
+      if (!Array.isArray(categories)) return [];
+      const validCats = categories.filter(c => c != null);
+      
+      // Lấy danh mục gốc
+      const roots = validCats.filter(c => !c.parentId);
+      
+      return roots.map(root => ({
+          ...root,
+          children: validCats.filter(c => {
+              if (!c.parentId) return false;
+              // Nếu backend trả về object (do populate) thì lấy _id, ngược lại lấy thẳng
+              const pId = typeof c.parentId === 'object' ? c.parentId._id : c.parentId;
+              
+              // ÉP KIỂU VỀ STRING: Bí quyết để hết lỗi "Mất tích danh mục con"
+              return String(pId) === String(root._id);
+          })
+      }));
+  }, [categories]);
 
   const handleSearch = (e) => {
-      e.preventDefault(); // Chặn reload trang
+      e.preventDefault(); 
       if (searchTerm.trim()) {
-          // Chuyển hướng sang trang Products kèm query param ?search=...
           navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
-          setShowMobileMenu(false); // Đóng menu mobile nếu đang mở
-          setSearchTerm(""); // (Tuỳ chọn) Xóa ô tìm kiếm sau khi enter
+          setShowMobileMenu(false); 
+          setSearchTerm(""); 
       }
   };
-  // --------------------------
 
   return (
     <>
       <Navbar expand="lg" className="sticky-top py-3" style={{ zIndex: 1020, backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
         <Container>
-          {/* ... (Phần Logo giữ nguyên) ... */}
-          <Navbar.Brand as={Link} to="/" className="fw-bold fs-3 d-flex align-items-center gap-2 me-lg-5">
+          
+          {/* 1. LOGO */}
+          <Navbar.Brand as={Link} to="/" className="fw-bold fs-3 d-flex align-items-center gap-2 me-3 me-lg-4">
             <div className="bg-success bg-opacity-10 p-2 rounded-circle d-flex align-items-center justify-content-center">
                <FaLeaf className="text-success" />
             </div>
             <span className="text-success">EcoStore</span>
           </Navbar.Brand>
 
-          {/* ... (Nút Mobile & Cart Mobile giữ nguyên) ... */}
-          <Button 
-            variant="link" 
-            className="d-lg-none text-success border-0 fs-2 p-0 ms-auto me-3"
-            onClick={() => setShowMobileMenu(true)}
-          >
+          {/* NÚT MOBILE (Giữ nguyên) */}
+          <Button variant="link" className="d-lg-none text-success border-0 fs-2 p-0 ms-auto me-3" onClick={() => setShowMobileMenu(true)}>
             <FaBars />
           </Button>
-
           <div className="d-flex align-items-center gap-2 d-lg-none">
              <Link to="/cart" className="position-relative text-success">
                 <FaShoppingCart size={18} />
-                {isLoggedIn && cartCount > 0 && (
-                  <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-2 border-white">
-                      {cartCount > 99 ? '99+' : cartCount}
-                  </Badge>
-                )}              
+                {isLoggedIn && cartCount > 0 && <Badge bg="danger" pill className="position-absolute top-0 start-100 translate-middle border border-2 border-white">{cartCount > 99 ? '99+' : cartCount}</Badge>}              
              </Link>
           </div>
 
-          <Navbar.Collapse id="basic-navbar-nav" className="d-none d-lg-flex">
-            {/* --- SEARCH BAR (DESKTOP) --- */}
-            <div className="mx-auto w-100 px-lg-5" style={{ maxWidth: '600px' }}>
+          <Navbar.Collapse id="basic-navbar-nav" className="d-none d-lg-flex align-items-center w-100">
+            
+            {/* 2. NÚT DANH MỤC MEGA MENU (Y HỆT HÌNH 1) */}
+            <div className="nav-item dropdown custom-nav-dropdown me-3">
+                {/* Nút Xanh lá */}
+                <Button 
+                    as={Link} 
+                    to="/products" 
+                    variant="success" 
+                    className="rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2"
+                    style={{ background: '#20c997', border: 'none', boxShadow: '0 4px 10px rgba(32,201,151,0.3)' }}
+                >
+                    <FaMenu size={16}/> Danh Mục
+                </Button>
+                
+                {/* Bảng Dropdown Menu (Thả xuống dưới nút) */}
+                <div className="custom-dropdown-menu shadow rounded-4 border-0 py-2 mt-2" style={{ minWidth: '240px' }}>
+                    {categoryTree && categoryTree.length > 0 ? (
+                        categoryTree.map(root => (
+                            <div key={root._id} className="custom-dropdown-item-wrapper">
+                                <Link 
+                                    to={`/products?category=${root._id}`} 
+                                    className="custom-dropdown-item d-flex justify-content-between align-items-center py-2 px-3"
+                                >
+                                    {root.name}
+                                    {root.children && root.children.length > 0 && <FaChevronRight size={12} className="text-muted"/>}
+                                </Link>
+
+                                {/* Sub-menu */}
+                                {root.children && Array.isArray(root.children) && root.children.length > 0 && (
+                                    <div className="custom-submenu shadow rounded-4 border-0 py-2">
+                                        {root.children.map(sub => (
+                                            <Link 
+                                                key={sub._id} 
+                                                to={`/products?category=${sub._id}`} 
+                                                className="custom-submenu-item py-2 px-3"
+                                            >
+                                                {sub.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="px-4 py-3 text-muted small">Đang tải danh mục...</div>
+                    )}
+                </div>
+            </div>
+
+            {/* 3. SEARCH BAR */}
+            <div className="flex-grow-1 me-lg-4" style={{ maxWidth: '500px' }}>
                 <Form className="d-flex position-relative w-100" onSubmit={handleSearch}>
                     <Form.Control
                         type="search"
                         placeholder="Tìm kiếm sản phẩm xanh..."
-                        className="rounded-pill border-0 bg-light py-2 ps-4 pe-5 shadow-sm"
+                        className="rounded-pill border border-success border-opacity-25 bg-white py-2 ps-4 pe-5 shadow-sm"
                         style={{ fontSize: '0.95rem' }}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -78,18 +159,18 @@ const Header = () => {
                 </Form>
             </div>
 
-            {/* ... (Phần Menu Links & User Actions giữ nguyên) ... */}
-            <div className="d-flex align-items-center gap-4">
-                <Nav className="d-flex gap-3 fw-medium">
-                    <NavLink to="/" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Trang chủ</NavLink>
-                    <NavLink to="/products" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Sản phẩm</NavLink>
-                    <NavLink to="/offers" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Ưu đãi</NavLink>
-                    <NavLink to="/about" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold border-bottom border-2 border-success pb-1" : "text-dark text-decoration-none hover-green pb-1"}>Giới thiệu</NavLink>
+            {/* 4. LINKS & USER MENU */}
+            <div className="d-flex align-items-center gap-3 ms-auto">
+                <Nav className="d-flex gap-3 fw-medium align-items-center me-2">
+                    <NavLink to="/" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold" : "text-dark text-decoration-none hover-green"}>Trang chủ</NavLink>
+                    <NavLink to="/products" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold" : "text-dark text-decoration-none hover-green"}>Sản phẩm</NavLink>
+                    <NavLink to="/offers" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold" : "text-dark text-decoration-none hover-green"}>Ưu đãi</NavLink>
+                    <NavLink to="/about" className={({isActive}) => isActive ? "text-success text-decoration-none fw-bold" : "text-dark text-decoration-none hover-green"}>Giới thiệu</NavLink>
                 </Nav>
                 
                 <div className="vr text-secondary opacity-25" style={{height: '25px'}}></div>
 
-                <div className="d-flex align-items-center gap-3">
+                <div className="d-flex align-items-center gap-2">
                     <Link to="/cart" className="position-relative btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center text-success cart-icon-hover" style={{width: 42, height: 42}}>
                         <FaShoppingCart size={18} />                        
                         {isLoggedIn && cartCount > 0 && (
@@ -99,7 +180,6 @@ const Header = () => {
                         )}
                     </Link>
 
-                    {/* User Dropdown giữ nguyên */}
                     <Dropdown align="end">
                         <Dropdown.Toggle variant="transparent" className="p-0 border-0 after-none">
                             <div className="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm user-icon-hover border border-success overflow-hidden" style={{width: 42, height: 42, padding: 0}}>
@@ -143,8 +223,9 @@ const Header = () => {
         </Container>
       </Navbar>
 
-      {/* MOBILE MENU (ĐÃ THÊM LOGIC SEARCH) */}
+      {/* MOBILE MENU */}
       <Offcanvas show={showMobileMenu} onHide={() => setShowMobileMenu(false)} placement="end" className="border-0 rounded-start-4">
+        {/* ... (Phần mobile menu giữ nguyên) ... */}
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title className="fw-bold text-success d-flex align-items-center gap-2">
              <FaLeaf /> EcoStore
@@ -161,7 +242,6 @@ const Header = () => {
                 />
             </Form>
 
-            {/* ... (Các phần còn lại của mobile menu giữ nguyên) ... */}
             <Nav className="flex-column gap-3 fs-5 fw-medium">
                 <Nav.Link as={Link} to="/" onClick={() => setShowMobileMenu(false)} className="border-bottom pb-2">Trang chủ</Nav.Link>
                 <Nav.Link as={Link} to="/products" onClick={() => setShowMobileMenu(false)} className="border-bottom pb-2">Sản phẩm</Nav.Link>

@@ -26,7 +26,7 @@ import SystemLogPage from '../pages/admin/SystemLogPage';
 import AdminProfile from "../pages/admin/AdminProfile";
 import CategoryManager from "../pages/admin/CategoryManager";
 import SuccessPage from "../pages/client/SuccessPage";
-
+import StaffManager from '../pages/admin/StaffManager';
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 
 import ProtectedRoute from "./ProtectedRoute";
@@ -89,6 +89,13 @@ const AppRoutes = () => {
             element={<ProtectedRoute allowedRoles={["admin", "manager"]} />}
           >
             <Route path="customers" element={<CustomerManager />} />
+          </Route>
+
+          {/* 4. Quản lý Nhân sự*/}
+          <Route
+            element={<ProtectedRoute allowedRoles={["admin", "manager"]} />}
+          >
+            <Route path="staff" element={<StaffManager />} />
           </Route>
 
           {/* 5. Thống kê: Chỉ Admin */}

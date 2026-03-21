@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext'; 
-import userApi from '../services/user.service'; // Đảm bảo đã có file này
+import userApi from '../services/user.service';
+import authApi from '../services/auth.service';
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
@@ -9,16 +10,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // 1. Hàm Logout (Gọi API logout nếu cần, hoặc chỉ xóa state)
-  const logout = useCallback(() => {
-    // Xóa user trong state
-    setUser(null);
-    localStorage.removeItem('currentUser'); // Xóa cache thông tin user (nếu có)
-    
-    // Nếu backend có API logout để xóa cookie server, hãy gọi ở đây
-    // userApi.logout(); 
-    
-    // Điều hướng về login
-    navigate('/login');
+  const logout = useCallback(async () => {
+    try {
+        // Báo cho server xóa HttpOnly Cookie
+        await authApi.logout(); 
+    } catch (error) {
+        console.error("Lỗi khi đăng xuất ở server:", error);
+    } finally {
+        // Xóa sạch ở Frontend bất kể server có lỗi hay không
+        setUser(null);
+        localStorage.removeItem('currentUser'); 
+        navigate('/login');
+    }
   }, [navigate]);
 
   // 2. Hàm Login (Chỉ lưu thông tin user vào state/localStorage, Token đã nằm trong Cookie HttpOnly)

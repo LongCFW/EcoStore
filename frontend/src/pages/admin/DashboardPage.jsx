@@ -1,222 +1,272 @@
-import React from 'react';
-import { Row, Col, Table, Badge, ProgressBar } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Table, Badge, Spinner } from 'react-bootstrap';
 import { 
     FaShoppingBag, FaUsers, FaDollarSign, FaChartLine, 
-    FaArrowUp, FaArrowDown, FaEllipsisV, FaCircle 
+    FaArrowUp, FaCircle 
 } from 'react-icons/fa';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart, Pie, Cell, Legend 
 } from 'recharts';
-import { useAdminTheme } from '../../context/useAdminTheme'; // Hook lấy theme để chỉnh màu chart
+import { useAdminTheme } from '../../context/useAdminTheme';
+import toast from 'react-hot-toast';
+import axiosClient from '../../services/axiosClient';
 import '../../assets/styles/admin.css';
 
 const DashboardPage = () => {
-  const { theme } = useAdminTheme();
-  const isDark = theme === 'dark';
+    const { theme } = useAdminTheme();
+    const isDark = theme === 'dark';
 
-  // --- DỮ LIỆU GIẢ LẬP (MOCK DATA) ---
-  const kpiData = [
-    { id: 1, title: 'Tổng Doanh Thu', value: '150.2M', icon: <FaDollarSign/>, trend: '+12.5%', isUp: true, color: 'primary' },
-    { id: 2, title: 'Đơn Hàng Mới', value: '450', icon: <FaShoppingBag/>, trend: '+8.2%', isUp: true, color: 'warning' },
-    { id: 3, title: 'Khách Hàng', value: '1,250', icon: <FaUsers/>, trend: '-2.1%', isUp: false, color: 'info' },
-    { id: 4, title: 'Lợi Nhuận', value: '45.8M', icon: <FaChartLine/>, trend: '+10.4%', isUp: true, color: 'danger' },
-  ];
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalUsers: 0,
+        recentOrders: [],
+        topProducts: [],
+        revenueData: [],
+        categoryData: []
+    });
 
-  const revenueData = [
-    { name: 'T2', uv: 4000, pv: 2400 },
-    { name: 'T3', uv: 3000, pv: 1398 },
-    { name: 'T4', uv: 2000, pv: 9800 },
-    { name: 'T5', uv: 2780, pv: 3908 },
-    { name: 'T6', uv: 1890, pv: 4800 },
-    { name: 'T7', uv: 2390, pv: 3800 },
-    { name: 'CN', uv: 3490, pv: 4300 },
-  ];
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setLoading(true);
+            try {
+                const response = await axiosClient.get('/orders/admin/dashboard-stats');
+                if (response.success) {
+                    setStats(response.data);
+                }
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu Dashboard:", error);
+                toast.error("Không thể tải dữ liệu thống kê.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const categoryData = [
-    { name: 'Rau củ', value: 400 },
-    { name: 'Trái cây', value: 300 },
-    { name: 'Đồ khô', value: 300 },
-    { name: 'Mỹ phẩm', value: 200 },
-  ];
-  const COLORS = ['#4caf50', '#ff9800', '#2196f3', '#f44336'];
+        fetchDashboardData();
+    }, []);
 
-  const recentOrders = [
-      { id: '#ORD-001', user: 'Nguyễn Văn A', date: '20/01/2025', total: '550.000đ', status: 'completed' },
-      { id: '#ORD-002', user: 'Trần Thị B', date: '19/01/2025', total: '1.200.000đ', status: 'shipping' },
-      { id: '#ORD-003', user: 'Lê Văn C', date: '19/01/2025', total: '340.000đ', status: 'pending' },
-      { id: '#ORD-004', user: 'Phạm Thị D', date: '18/01/2025', total: '890.000đ', status: 'cancelled' },
-  ];
+    const formatCurrency = (amount) => {
+        if (!amount) return '0 đ';
+        if (amount >= 1000000) {
+            return (amount / 1000000).toFixed(1) + 'M';
+        }
+        return amount.toLocaleString('vi-VN') + ' đ';
+    };
 
-  const getStatusBadge = (status) => {
-      switch(status) {
-          case 'completed': return <Badge bg="success" className="rounded-pill">Hoàn thành</Badge>;
-          case 'shipping': return <Badge bg="primary" className="rounded-pill">Vận chuyển</Badge>;
-          case 'pending': return <Badge bg="warning" text="dark" className="rounded-pill">Chờ xử lý</Badge>;
-          default: return <Badge bg="secondary" className="rounded-pill">Đã hủy</Badge>;
-      }
-  };
+    const COLORS = ['#4caf50', '#ff9800', '#2196f3', '#f44336'];
 
-  return (
-    <div className="animate-fade-in">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Tổng Quan Dashboard</h2>
-          <div className="text-muted small">Cập nhật: Hôm nay, 20/01/2025</div>
-      </div>
+    const getStatusBadge = (status) => {
+        switch(status) {
+            case 'completed': case 'delivered': return <Badge bg="success" className="rounded-pill shadow-sm">Hoàn thành</Badge>;
+            case 'shipping': case 'confirmed': return <Badge bg="primary" className="rounded-pill shadow-sm">Vận chuyển</Badge>;
+            case 'pending': return <Badge bg="warning" text="dark" className="rounded-pill shadow-sm">Chờ xử lý</Badge>;
+            default: return <Badge bg="secondary" className="rounded-pill shadow-sm">Đã hủy</Badge>;
+        }
+    };
 
-      {/* 1. KPI CARDS */}
-      <Row className="g-4 mb-4">
-          {kpiData.map((item) => (
-              <Col md={6} xl={3} key={item.id}>
-                  <div className={`stat-card stat-${item.color}`}>
-                      <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                              <p className="text-muted mb-1 fw-bold text-uppercase" style={{fontSize: '0.8rem'}}>{item.title}</p>
-                              <h3 className="fw-bold mb-0" style={{color: 'var(--admin-text)'}}>{item.value}</h3>
-                          </div>
-                          <div className={`stat-icon bg-${item.color} bg-opacity-25 text-${item.color}`}>
-                              {item.icon}
-                          </div>
-                      </div>
-                      <div className="mt-3 d-flex align-items-center small">
-                          <span className={`fw-bold me-2 ${item.isUp ? 'text-success' : 'text-danger'}`}>
-                              {item.isUp ? <FaArrowUp size={10}/> : <FaArrowDown size={10}/>} {item.trend}
-                          </span>
-                          <span className="text-muted">so với tháng trước</span>
-                      </div>
-                  </div>
-              </Col>
-          ))}
-      </Row>
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center min-vh-100">
+                <Spinner animation="grow" variant="success" />
+            </div>
+        );
+    }
 
-      {/* 2. CHARTS SECTION */}
-      <Row className="g-4 mb-4">
-          {/* Revenue Chart */}
-          <Col lg={8}>
-              <div className="chart-container">
-                  <h5 className="fw-bold mb-4" style={{color: 'var(--admin-text)'}}>Biểu Đồ Doanh Thu</h5>
-                  <div style={{ width: '100%', height: 350 }}>
-                    <ResponsiveContainer>
-                        <AreaChart data={revenueData}>
-                            <defs>
-                                <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#4caf50" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="#4caf50" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                            <YAxis axisLine={false} tickLine={false} />
-                            <Tooltip 
-                                contentStyle={{ backgroundColor: isDark ? '#333' : '#fff', borderRadius: '10px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}
-                            />
-                            <Area type="monotone" dataKey="uv" stroke="#4caf50" strokeWidth={3} fillOpacity={1} fill="url(#colorUv)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-              </div>
-          </Col>
+    return (
+        <div className="animate-fade-in">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h2 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Tổng Quan Dashboard</h2>
+                    <p className="text-muted small m-0 mt-1">Số liệu trực tiếp từ hệ thống EcoStore</p>
+                </div>
+                <div className="text-muted small bg-light p-2 rounded-3 border shadow-sm">
+                    Cập nhật lúc: <strong className="text-success">{new Date().toLocaleTimeString('vi-VN')}</strong> - {new Date().toLocaleDateString('vi-VN')}
+                </div>
+            </div>
 
-          {/* Category Pie Chart */}
-          <Col lg={4}>
-              <div className="chart-container">
-                  <h5 className="fw-bold mb-4" style={{color: 'var(--admin-text)'}}>Danh Mục Bán Chạy</h5>
-                  <div style={{ width: '100%', height: 300 }} className="d-flex align-items-center justify-content-center">
-                    <ResponsiveContainer>
-                        <PieChart>
-                            <Pie
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend verticalAlign="bottom" height={36}/>
-                        </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-2">
-                      {categoryData.map((item, index) => (
-                          <div key={index} className="d-flex justify-content-between align-items-center mb-2 small">
-                              <div className="d-flex align-items-center">
-                                  <FaCircle size={8} color={COLORS[index]} className="me-2"/>
-                                  <span style={{color: 'var(--admin-text)'}}>{item.name}</span>
-                              </div>
-                              <span className="fw-bold text-muted">{item.value} đơn</span>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          </Col>
-      </Row>
+            {/* 1. KPI CARDS */}
+            <Row className="g-4 mb-4">
+                <Col md={6} xl={3}>
+                    <div className="stat-card stat-primary h-100 hover-scale transition-all">
+                        <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p className="text-muted mb-1 fw-bold text-uppercase" style={{fontSize: '0.8rem'}}>Tổng Doanh Thu</p>
+                                <h3 className="fw-bold mb-0 text-primary">{formatCurrency(stats.totalRevenue)}</h3>
+                            </div>
+                            <div className="stat-icon bg-primary bg-opacity-25 text-primary shadow-sm"><FaDollarSign/></div>
+                        </div>
+                    </div>
+                </Col>
 
-      {/* 3. RECENT ORDERS & TOP PRODUCTS */}
-      <Row className="g-4">
-          <Col lg={8}>
-              <div className="table-card h-100">
-                  <div className="p-4 d-flex justify-content-between align-items-center border-bottom border-light">
-                      <h5 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Đơn Hàng Gần Đây</h5>
-                      <Badge bg="light" text="dark" className="border cursor-pointer">Xem tất cả</Badge>
-                  </div>
-                  <Table hover responsive className="custom-table mb-0">
-                      <thead>
-                          <tr>
-                              <th>Mã Đơn</th>
-                              <th>Khách Hàng</th>
-                              <th>Ngày Đặt</th>
-                              <th>Tổng Tiền</th>
-                              <th>Trạng Thái</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {recentOrders.map((order, idx) => (
-                              <tr key={idx}>
-                                  <td className="fw-bold text-primary">{order.id}</td>
-                                  <td>{order.user}</td>
-                                  <td>{order.date}</td>
-                                  <td className="fw-bold">{order.total}</td>
-                                  <td>{getStatusBadge(order.status)}</td>
-                              </tr>
-                          ))}
-                      </tbody>
-                  </Table>
-              </div>
-          </Col>
+                <Col md={6} xl={3}>
+                    <div className="stat-card stat-warning h-100 hover-scale transition-all">
+                        <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p className="text-muted mb-1 fw-bold text-uppercase" style={{fontSize: '0.8rem'}}>Tổng Đơn Hàng</p>
+                                <h3 className="fw-bold mb-0 text-warning">{stats.totalOrders}</h3>
+                            </div>
+                            <div className="stat-icon bg-warning bg-opacity-25 text-warning shadow-sm"><FaShoppingBag/></div>
+                        </div>
+                    </div>
+                </Col>
 
-          <Col lg={4}>
-              <div className="stat-card h-100 p-0 overflow-hidden">
-                  <div className="p-4 border-bottom border-light">
-                      <h5 className="fw-bold m-0" style={{color: 'var(--admin-text)'}}>Top Sản Phẩm</h5>
-                  </div>
-                  <div className="p-4">
-                      {[1,2,3,4].map((i) => (
-                          <div key={i} className="d-flex align-items-center mb-4 last-mb-0">
-                              <img 
-                                  src={`https://images.unsplash.com/photo-1607613009820-a29f7bb6dc2d?auto=format&fit=crop&w=100&q=80`} 
-                                  alt="Product" 
-                                  className="rounded-3 border"
-                                  style={{width: 50, height: 50, objectFit: 'cover'}}
-                              />
-                              <div className="ms-3 flex-grow-1">
-                                  <h6 className="fw-bold mb-1 text-truncate" style={{maxWidth: '150px', color: 'var(--admin-text)'}}>Bàn chải tre Eco {i}</h6>
-                                  <small className="text-muted">150 đã bán</small>
-                              </div>
-                              <span className="fw-bold text-success">50k</span>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          </Col>
-      </Row>
-    </div>
-  );
+                <Col md={6} xl={3}>
+                    <div className="stat-card stat-info h-100 hover-scale transition-all">
+                        <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p className="text-muted mb-1 fw-bold text-uppercase" style={{fontSize: '0.8rem'}}>Khách Hàng</p>
+                                <h3 className="fw-bold mb-0 text-info">{stats.totalUsers}</h3>
+                            </div>
+                            <div className="stat-icon bg-info bg-opacity-25 text-info shadow-sm"><FaUsers/></div>
+                        </div>
+                    </div>
+                </Col>
+
+                <Col md={6} xl={3}>
+                    <div className="stat-card stat-success h-100 hover-scale transition-all">
+                        <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p className="text-muted mb-1 fw-bold text-uppercase" style={{fontSize: '0.8rem'}}>Đơn Vừa Chốt</p>
+                                <h3 className="fw-bold mb-0 text-success">{stats.recentOrders.filter(o => o.status === 'confirmed').length || 0}</h3>
+                            </div>
+                            <div className="stat-icon bg-success bg-opacity-25 text-success shadow-sm"><FaChartLine/></div>
+                        </div>
+                    </div>
+                </Col>
+            </Row>
+
+            {/* 2. CHARTS SECTION */}
+            <Row className="g-4 mb-4">
+                {/* BIỂU ĐỒ DOANH THU */}
+                <Col lg={8}>
+                    <div className="chart-container shadow-sm border-0 rounded-4 transition-all">
+                        <h5 className="fw-bold mb-4" style={{color: 'var(--admin-text)'}}>Biểu Đồ Doanh Thu 7 Ngày Qua</h5>
+                        <div style={{ width: '100%', height: 350 }}>
+                            <ResponsiveContainer>
+                                <AreaChart data={stats.revenueData}>
+                                    <defs>
+                                        <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#4caf50" stopOpacity={0.5}/>
+                                            <stop offset="95%" stopColor="#4caf50" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#444' : '#eee'} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: isDark ? '#aaa' : '#666'}} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{fill: isDark ? '#aaa' : '#666'}} />
+                                    <Tooltip 
+                                        formatter={(value) => [`${value.toLocaleString('vi-VN')} đ`, 'Doanh thu']}
+                                        labelFormatter={(label) => `Ngày: ${label}`}
+                                        contentStyle={{ backgroundColor: isDark ? '#333' : '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}
+                                        itemStyle={{ color: '#4caf50', fontWeight: 'bold' }}
+                                    />
+                                    <Area type="monotone" dataKey="uv" stroke="#4caf50" strokeWidth={4} fillOpacity={1} fill="url(#colorUv)" activeDot={{r: 6, strokeWidth: 0, fill: '#4caf50'}} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </Col>
+
+                {/* BIỂU ĐỒ TRÒN (PIE CHART) */}
+                <Col lg={4}>
+                    <div className="chart-container shadow-sm border-0 rounded-4 transition-all">
+                        <h5 className="fw-bold mb-4" style={{color: 'var(--admin-text)'}}>Tỷ Trọng Danh Mục</h5>
+                        <div style={{ width: '100%', height: 300 }} className="d-flex align-items-center justify-content-center">
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={stats.categoryData}
+                                        cx="50%" cy="50%"
+                                        innerRadius={70} outerRadius={90}
+                                        paddingAngle={8}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {stats.categoryData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip 
+                                        formatter={(value) => [`${value} sản phẩm`, 'Đã bán']}
+                                        contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: '0.85rem', color: 'var(--admin-text)'}}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </Col>
+            </Row>
+
+            {/* 3. RECENT ORDERS & TOP PRODUCTS */}
+            <Row className="g-4">
+                <Col lg={8}>
+                    <div className="table-card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition-all">
+                        <div className="p-4 d-flex justify-content-between align-items-center border-bottom border-light bg-white bg-opacity-75">
+                            <h5 className="fw-bold m-0 d-flex align-items-center gap-2" style={{color: 'var(--admin-text)'}}>
+                                <FaShoppingBag className="text-success" /> Đơn Hàng Mới Nhất
+                            </h5>
+                        </div>
+                        <Table hover responsive className="custom-table mb-0 align-middle">
+                            <thead className="bg-light">
+                                <tr>
+                                    <th className="ps-4">Mã Đơn</th>
+                                    <th>Khách Hàng</th>
+                                    <th>Ngày Đặt</th>
+                                    <th className="text-end">Tổng Tiền</th>
+                                    <th className="text-center pe-4">Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stats.recentOrders.length > 0 ? stats.recentOrders.map((order) => (
+                                    <tr key={order._id} className="transition-all hover-scale-slight">
+                                        <td className="ps-4 fw-bold text-success">{order.orderNumber}</td>
+                                        <td className="fw-medium" style={{color: 'var(--admin-text)'}}>{order.userId?.name || "Khách Vãng Lai"}</td>
+                                        <td className="text-muted small">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                                        <td className="fw-bold text-end text-dark">{order.totalAmount_cents?.toLocaleString()} đ</td>
+                                        <td className="text-center pe-4">{getStatusBadge(order.status)}</td>
+                                    </tr>
+                                )) : (
+                                    <tr><td colSpan="5" className="text-center py-4 text-muted">Chưa có đơn hàng nào</td></tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                </Col>
+
+                {/* SẢN PHẨM HOT TỪ DATABASE */}
+                <Col lg={4}>
+                    <div className="stat-card h-100 p-0 overflow-hidden shadow-sm border-0 rounded-4 transition-all">
+                        <div className="p-4 border-bottom border-light bg-white bg-opacity-75">
+                            <h5 className="fw-bold m-0 d-flex align-items-center gap-2" style={{color: 'var(--admin-text)'}}>
+                                <FaChartLine className="text-danger" /> Sản Phẩm Bán Chạy
+                            </h5>
+                        </div>
+                        <div className="p-4">
+                            {stats.topProducts.length > 0 ? stats.topProducts.map((product, idx) => (
+                                <div key={product._id} className="d-flex align-items-center mb-4 last-mb-0 hover-scale-slight transition-all p-2 rounded-3 hover-bg-light">
+                                    <span className={`fw-bold fs-5 me-3 ${idx === 0 ? 'text-warning' : idx === 1 ? 'text-secondary' : 'text-danger'}`}>#{idx + 1}</span>
+                                    <img 
+                                        src={product.image || `https://placehold.co/100`} 
+                                        alt={product.name} 
+                                        className="rounded-3 shadow-sm object-fit-cover border"
+                                        style={{width: 55, height: 55}}
+                                    />
+                                    <div className="ms-3 flex-grow-1">
+                                        <h6 className="fw-bold mb-1 text-truncate" style={{maxWidth: '140px', color: 'var(--admin-text)'}} title={product.name}>{product.name}</h6>
+                                        <small className="text-success fw-bold">{product.sold} đã bán</small>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-center text-muted">Chưa có dữ liệu bán hàng</p>
+                            )}
+                        </div>
+                    </div>
+                </Col>
+            </Row>
+        </div>
+    );
 };
 
 export default DashboardPage;

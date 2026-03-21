@@ -2,7 +2,8 @@ import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { 
     FaTachometerAlt, FaBox, FaShoppingBag, FaUsers, 
-    FaChartBar, FaCogs , FaShieldAlt, FaLeaf, FaBookOpen 
+    FaChartBar, FaCogs , FaShieldAlt, FaLeaf, FaBookOpen ,
+    FaUserShield
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -13,8 +14,9 @@ const AdminSidebar = ({ isOpen, closeSidebar }) => {
     { path: '/admin', label: 'Dashboard', icon: <FaTachometerAlt />, roles: ['admin', 'manager', 'staff'] },
     { path: '/admin/categories', label: 'Danh mục', icon: <FaBookOpen />, roles: ['admin', 'manager'] },
     { path: '/admin/products', label: 'Sản phẩm', icon: <FaBox />, roles: ['admin', 'manager'] },
-    { path: '/admin/orders', label: 'Đơn hàng', icon: <FaShoppingBag />, roles: ['admin', 'manager', 'staff'] },
     { path: '/admin/customers', label: 'Khách hàng', icon: <FaUsers />, roles: ['admin', 'manager'] },
+    { path: '/admin/staff', label: 'Nhân sự', icon: <FaUserShield />, roles: ['admin'] },
+    { path: '/admin/orders', label: 'Đơn hàng', icon: <FaShoppingBag />, roles: ['admin', 'manager', 'staff'] },
     { path: '/admin/stats', label: 'Thống kê', icon: <FaChartBar />, roles: ['admin'] },
     { path: '/admin/settings', label: 'Cấu hình', icon: <FaCogs />, roles: ['admin'] },
     { path: '/admin/logs', label: 'Nhật ký', icon: <FaShieldAlt />, roles: ['admin'] }
