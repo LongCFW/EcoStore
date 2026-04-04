@@ -1,0 +1,50 @@
+services:
+  mongo:
+    image: mongo:6
+    container_name: ecostore_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - ecostore-net
+
+  backend:
+    build: ./backend
+    container_name: ecostore_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/ecostore  #override dùng local Docker
+    depends_on:
+      - mongo
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - ecostore-net          
+
+  frontend:
+    build: ./frontend
+    container_name: ecostore_frontend
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env       #đọc file .env frontend
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - ecostore-net
+
+volumes:
+  mongo-data:
+
+networks:                     #khai báo network
+  ecostore-net:
+    driver: bridge
