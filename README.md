@@ -1,131 +1,97 @@
-# EcoStore - Nền Tảng Thương Mại Điện Tử MERN Stack
+# EcoStore
 
-Dự án E-commerce chuyên kinh doanh các sản phẩm xanh, hữu cơ và thân thiện với môi trường. Hệ thống bao gồm giao diện mua sắm cho khách hàng và trang quản trị (Admin Dashboard) với phân quyền chặt chẽ.
+EcoStore là ứng dụng thương mại điện tử (MERN Stack) chuyên dành cho sản phẩm xanh, hữu cơ và thân thiện môi trường.
 
-## Giới Thiệu
-
-**EcoStore** là một ứng dụng Full-stack được xây dựng trên nền tảng **MERN (MongoDB, Express, React, Node.js)**. Dự án tập trung vào trải nghiệm người dùng mượt mà (Optimistic UI), bảo mật cao (HttpOnly Cookie, RBAC) và kiến trúc mã nguồn sạch sẽ, dễ bảo trì.
+> **Chạy toàn bộ dự án chỉ với 1 lệnh:** `docker compose up --build`
 
 ---
 
-## Công Nghệ Sử Dụng
+## Tính Năng Chính
 
-### Frontend (Client & Admin)
+### Khách Hàng (Client)
 
-* **Core:** [React 19](https://react.dev/), [Vite](https://vitejs.dev/) (Build tool).
-* **UI Framework:** [React Bootstrap](https://react-bootstrap.github.io/) (Responsive layout).
-* **State & Routing:** Context API (Auth, Cart, Wishlist), [React Router DOM v7](https://reactrouter.com/).
-* **Data Fetching:** [Axios](https://axios-http.com/) (với Interceptors xử lý Token/Lỗi).
-* **Utilities:**
-* `react-hot-toast`: Thông báo (Toast notification).
-* `recharts`: Biểu đồ thống kê.
-* `react-icons`: Bộ icon đa dạng.
-* `js-cookie`, `jwt-decode`: Xử lý cookie và token.
+- **Xác thực:** Đăng ký, đăng nhập, quên/đặt lại mật khẩu qua email
+- **Sản phẩm:** Tìm kiếm, lọc theo danh mục, xem chi tiết, nhiều biến thể (size/weight)
+- **Giỏ hàng:** Lưu trữ và đồng bộ giỏ hàng client ↔ server
+- **Đặt hàng:** Tạo đơn, chọn địa chỉ, thanh toán COD / PayOS
+- **Wishlist:** Thêm/xóa yêu thích với Optimistic UI
+- **Lịch sử đơn hàng:** Xem trạng thái, nhận email xác nhận tự động
+- **Liên hệ:** Gửi thắc mắc, tự động gửi email phản hồi
 
-### Backend (API Server)
+### Admin Dashboard
 
-* **Runtime:** [Node.js](https://nodejs.org/), [Express](https://expressjs.com/).
-* **Database:** [MongoDB](https://www.mongodb.com/) & [Mongoose](https://mongoosejs.com/).
-* **Authentication:** JWT (JSON Web Token), BCrypt (Mã hóa mật khẩu).
-* **File Upload:** [Multer](https://github.com/expressjs/multer) (Xử lý upload ảnh).
-* **Email Service:** [Nodemailer](https://nodemailer.com/).
-* **Security & Validation:** `cookie-parser`, `cors`, `express-validator`, `dotenv`.
-* **Utilities:** `slugify` (Tạo URL thân thiện).
+- **Phân quyền RBAC:** 3 cấp — Admin / Manager / Staff
+- **Dashboard:** Thống kê tổng quan, biểu đồ doanh thu
+- **Sản phẩm:** CRUD, upload ảnh, quản lý biến thể (SKU, tồn kho)
+- **Danh mục:** CRUD danh mục sản phẩm
+- **Đơn hàng:** Xem chi tiết, cập nhật trạng thái (Pending → Shipping → Delivered)
+- **Khách hàng:** Xem danh sách, khóa/mở khóa tài khoản (chỉ Admin)
 
----
+### Hệ Thống
 
-## Tính Năng Nổi Bật
-
-### Client (Khách Hàng)
-
-#### 1. Xác thực (Auth)
-
-* Đăng ký / Đăng nhập / Đăng xuất.
-* **Quên mật khẩu & Đặt lại mật khẩu** (qua Email xác thực).
-* Bảo mật phiên làm việc bằng **HttpOnly Cookie**.
-
-#### 2. Mua sắm (Shopping Flow)
-
-* **Sản phẩm:** Xem danh sách, chi tiết sản phẩm, lọc theo (Danh mục, Thương hiệu, Giá), Tìm kiếm thời gian thực.
-* **Giỏ hàng (Cart):**
-* Đồng bộ giỏ hàng với Database (giữ giỏ hàng khi đăng nhập thiết bị khác).
-* Tự động tính toán tổng tiền và Freeship tại Backend.
-* **Thanh toán (Checkout):**
-* Quản lý sổ địa chỉ (Thêm mới/Chọn có sẵn).
-* **Snapshot giá:** Lưu cứng giá sản phẩm tại thời điểm mua (tránh sai lệch khi giá gốc thay đổi).
-* Kiểm tra và trừ tồn kho (Inventory Check).
-* **Đơn hàng:** Xem lịch sử mua hàng, nhận Email xác nhận đơn hàng tự động.
-
-#### 3. Tiện ích (Standalone)
-
-* **Wishlist:** Thêm/Xóa sản phẩm yêu thích (Sử dụng Optimistic UI update - cập nhật ngay lập tức không cần chờ server).
-* **Liên hệ:** Gửi thắc mắc, tự động gửi email phản hồi cho khách và thông báo cho Admin.
-
-#### 4. Hệ thống (System)
-
-* **URL Params Sync:** Trạng thái lọc, phân trang, tab đều được đồng bộ lên URL (F5 không mất dữ liệu).
-* **Auto Logout:** Tự động đăng xuất khi Token hết hạn.
+- Snapshot giá tại thời điểm mua (tránh sai lệch khi giá thay đổi)
+- URL Params Sync: lọc/phân trang đồng bộ URL, F5 không mất dữ liệu
+- Auto logout khi token hết hạn
+- Activity log ghi nhận hoạt động admin
 
 ---
 
-### Admin Dashboard (Quản Trị)
+## 🛠 Công Nghệ
 
-#### 1. Phân quyền (RBAC - Role Based Access Control)
-
-* Hệ thống phân quyền 3 cấp độ: **ADMIN**, **MANAGER**, **STAFF**.
-* **Middleware bảo vệ:** Chặn API ngay từ Backend nếu không đủ quyền.
-* **Dynamic Sidebar:** Menu tự động ẩn/hiện tùy theo vai trò của người đăng nhập.
-
-#### 2. Quản lý dữ liệu (Management)
-
-* **Dashboard:** Thống kê tổng quan (Chart, Mini stats).
-* **Sản phẩm (Product):** Thêm, Sửa, Xóa, Upload ảnh, Quản lý biến thể (SKU, Stock).
-* **Danh mục (Category):** CRUD danh mục sản phẩm.
-* **Đơn hàng (Order):** Xem chi tiết, Cập nhật trạng thái (Pending -> Shipping -> Delivered).
-* **Khách hàng (Customer):** Xem danh sách.
-* *Logic đặc biệt:* Chỉ **Admin** mới có quyền Khóa/Mở khóa tài khoản, Manager chỉ được xem.
+| Frontend | React (Vite), Context API, React Router, Axios |
+| Backend | Node.js, Express, Mongoose |
+| Database | MongoDB |
+| Auth | JWT, HttpOnly Cookie, bcryptjs |
+| Email | Nodemailer |
+| Payment | PayOS |
+| DevOps | Docker, Docker Compose |
 
 ---
 
-## Hướng Dẫn Cài Đặt & Chạy Local
+## Cài Đặt & Chạy
 
-Yêu cầu tiên quyết: Node.js (v16 trở lên), MongoDB (Local hoặc Atlas)
+Xem hướng dẫn chi tiết tại **[SETUP.md](SETUP.md)**
 
-1. Cài đặt Backend
-cd backend
-npm install
-npm run seed  
-npm run dev
+### Nhanh (TL;DR)
 
-2. Cài đặt Frontend
-cd frontend
-npm install
-npm run dev
+```bash
+# 1. Clone
+git clone <repo-url>
+cd EcoStore
 
-3. Cấu hình biến môi trường (backend/.env)
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/ecostore
-JWT_SECRET=your_super_secret_key_123
-JWT_EXPIRES_IN=7d
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USER=[your-email@gmail.com]
-MAIL_PASS=[your-app-password]
-CLIENT_URL=[http://localhost:5173]
+# 2. Tạo file môi trường
+cp backend/.env.example backend/.env
+# → Mở backend/.env và điền thông tin của bạn
+
+# 3. Khởi động Docker
+docker compose up --build
+
+# 4. Seed data mẫu (terminal mới)
+docker exec ecostore_backend npm run seed
+```
+
+**Truy cập:**
+
+- Frontend: [http://localhost:5173]
+- Backend API: [http://localhost:5000/api]
 
 ---
 
 ## Tài Khoản Demo
 
-Admin: [admin@ecostore.com] | pass: 123456 (Full quyền hệ thống)
-Manager: [manager@ecostore.com] | pass: 123456 (Quản lý, không được xóa user/cấu hình)
-Staff: [staff@ecostore.com] | pass: 123456 (Chỉnh được phép cập nhật đơn hàng)
-Customer [customer@ecostore.com] | pass: 123456 (Mua hàng, xem lịch sử)
+| Role | Email | Password |
+| Admin | [admin@ecostore.com] | 123456 |
+| Staff | [staff@ecostore.com] | 123456 |
+| Customer | [customer@ecostore.com] | 123456 |
+
+> Tài khoản demo chỉ có sau khi chạy `npm run seed`
 
 ---
 
-## Tác giả
+## Tác Giả
 
-Dự án được phát triển bởi Lê Nguyễn Bảo Long (Brian Lee). Mọi đóng góp hoặc báo lỗi vui lòng tạo Issue hoặc Pull Request.
+Phát triển bởi **Lê Nguyễn Bảo Long (Brian Lee)**
+
+Mọi đóng góp hoặc báo lỗi vui lòng tạo Issue hoặc Pull Request.
 
 © 2025 EcoStore. All rights reserved.
